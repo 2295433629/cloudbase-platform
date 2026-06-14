@@ -86,7 +86,7 @@ public class AuthInterceptor implements HandlerInterceptor {
     private String extractToken(HttpServletRequest request) {
         String header = request.getHeader(jwtProperties.getHeader());
         if (StrUtil.isNotBlank(header) && header.startsWith(jwtProperties.getTokenPrefix())) {
-            return header.substring(jwtProperties.getTokenPrefix().length());
+            return header.substring(jwtProperties.getTokenPrefix().length()).trim();
         }
         return null;
     }

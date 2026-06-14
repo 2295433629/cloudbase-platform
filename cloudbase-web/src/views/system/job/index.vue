@@ -79,10 +79,10 @@ onMounted(loadData)
 
 const handleAdd = () => { dialogTitle.value = '新增任务'; Object.assign(form, { jobId: null, jobName: '', jobGroup: 'DEFAULT', invokeTarget: '', cronExpression: '', remark: '', concurrent: 1 }); dialogVisible.value = true }
 const handleEdit = (row) => { dialogTitle.value = '编辑任务'; Object.assign(form, row); dialogVisible.value = true }
-const handleDelete = (row) => { api.post('/sys/job/delete', { jobId: row.jobId }).then(() => { ElMessage.success('已删除'); loadData() }) }
-const handleRun = (row) => { api.post('/sys/job/run', { jobId: row.jobId }).then(() => { ElMessage.success('已触发执行'); loadData() }) }
-const handlePause = (row) => { api.post('/sys/job/pause', { jobId: row.jobId }).then(() => { ElMessage.success('已暂停'); loadData() }) }
-const handleResume = (row) => { api.post('/sys/job/resume', { jobId: row.jobId }).then(() => { ElMessage.success('已恢复'); loadData() }) }
+const handleDelete = (row) => { api.post('/sys/job/delete', { id: row.jobId }).then(() => { ElMessage.success('已删除'); loadData() }) }
+const handleRun = (row) => { api.post('/sys/job/run', { id: row.jobId }).then(() => { ElMessage.success('已触发执行'); loadData() }) }
+const handlePause = (row) => { api.post('/sys/job/pause', { id: row.jobId }).then(() => { ElMessage.success('已暂停'); loadData() }) }
+const handleResume = (row) => { api.post('/sys/job/resume', { id: row.jobId }).then(() => { ElMessage.success('已恢复'); loadData() }) }
 const handleSubmit = () => {
   const url = form.jobId ? '/sys/job/edit' : '/sys/job/add'
   api.post(url, form).then(() => { ElMessage.success('操作成功'); dialogVisible.value = false; loadData() })

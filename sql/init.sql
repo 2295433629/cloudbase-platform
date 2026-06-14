@@ -21,6 +21,7 @@ CREATE TABLE sys_dept (
     sort        INT          DEFAULT 0 COMMENT '排序',
     leader      VARCHAR(50)  DEFAULT NULL COMMENT '负责人',
     phone       VARCHAR(20)  DEFAULT NULL COMMENT '联系电话',
+    email       VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
     status      TINYINT      DEFAULT 1 COMMENT '状态 1-启用 0-禁用',
     create_time DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     create_user BIGINT       DEFAULT NULL COMMENT '创建人',
@@ -210,31 +211,71 @@ CREATE TABLE sys_notice (
 
 -- ----------------------------
 -- 初始化数据：超级管理员
--- 密码: admin123 (SHA2(CONCAT(password, account), 256))
+-- 密码: 123456 (SHA2(CONCAT(password, account), 256))
 -- ----------------------------
 INSERT INTO sys_user (user_id, account, password, real_name, status)
-VALUES (1, 'admin', SHA2(CONCAT('admin123', 'admin'), 256), '超级管理员', 1);
+VALUES (1, 'admin', SHA2(CONCAT('123456', 'admin'), 256), '超级管理员', 1);
 
 -- ----------------------------
--- 初始化菜单
+-- 初始化菜单（与前端 Sidebar.vue / router 保持一致）
+-- menu_type: 1-目录 2-菜单 3-按钮
 -- ----------------------------
-INSERT INTO sys_menu (menu_id, parent_id, menu_name, menu_type, path, component, icon, sort, status) VALUES
-(1,  0,  '系统管理', 1, '/system',     NULL,            'Setting', 1, 1),
-(2,  1,  '用户管理', 2, '/system/user', 'system/user/index', 'User', 1, 1),
-(3,  1,  '角色管理', 2, '/system/role', 'system/role/index', 'UserFilled', 2, 1),
-(4,  1,  '菜单管理', 2, '/system/menu', 'system/menu/index', 'Menu', 3, 1),
-(5,  1,  '字典管理', 2, '/system/dict', 'system/dict/index', 'Notebook', 4, 1),
-(6,  2,  '用户新增', 3, NULL, NULL, 'sys:user:add', 1, 1),
-(7,  2,  '用户编辑', 3, NULL, NULL, 'sys:user:edit', 2, 1),
-(8,  2,  '用户删除', 3, NULL, NULL, 'sys:user:delete', 3, 1),
-(9,  1,  '部门管理', 2, '/system/dept', 'system/dept/index', 'OfficeBuilding', 5, 1),
-(10, 1,  '操作日志', 2, '/system/operlog', 'system/operlog/index', 'Document', 6, 1),
-(11, 1,  '登录日志', 2, '/system/loginlog', 'system/loginlog/index', 'Lock', 7, 1),
-(12, 1,  '在线用户', 2, '/system/online', 'system/online/index', 'Connection', 8, 1),
-(13, 1,  '参数配置', 2, '/system/config', 'system/config/index', 'Tools', 9, 1),
-(14, 1,  '通知公告', 2, '/system/notice', 'system/notice/index', 'Bell', 10, 1),
-(15, 14, '公告新增', 3, NULL, NULL, 'sys:notice:add', 1, 1),
-(16, 14, '公告编辑', 3, NULL, NULL, 'sys:notice:edit', 2, 1);
+INSERT INTO sys_menu (menu_id, parent_id, menu_name, menu_type, path, component, perms, icon, sort, status) VALUES
+-- ===== 目录：系统管理 =====
+(1,  0,  '系统管理',   1, '/system',            NULL,                         NULL,                'Setting',        1, 1),
+(2,  1,  '用户管理',   2, '/system/user',       'system/user/index',          NULL,                'User',           1, 1),
+(3,  1,  '角色管理',   2, '/system/role',       'system/role/index',          NULL,                'UserFilled',     2, 1),
+(4,  1,  '菜单管理',   2, '/system/menu',       'system/menu/index',          NULL,                'Menu',           3, 1),
+(5,  1,  '字典管理',   2, '/system/dict',       'system/dict/index',          NULL,                'Notebook',       4, 1),
+(6,  1,  '部门管理',   2, '/system/dept',       'system/dept/index',          NULL,                'OfficeBuilding', 5, 1),
+-- 用户管理按钮
+(7,  2,  '用户新增',   3, NULL, NULL, 'sys:user:add',    NULL, 1, 1),
+(8,  2,  '用户编辑',   3, NULL, NULL, 'sys:user:edit',   NULL, 2, 1),
+(9,  2,  '用户删除',   3, NULL, NULL, 'sys:user:delete', NULL, 3, 1),
+-- 角色管理按钮
+(10, 3,  '角色新增',   3, NULL, NULL, 'sys:role:add',    NULL, 1, 1),
+(11, 3,  '角色编辑',   3, NULL, NULL, 'sys:role:edit',   NULL, 2, 1),
+(12, 3,  '角色删除',   3, NULL, NULL, 'sys:role:delete', NULL, 3, 1),
+-- 菜单管理按钮
+(13, 4,  '菜单新增',   3, NULL, NULL, 'sys:menu:add',    NULL, 1, 1),
+(14, 4,  '菜单编辑',   3, NULL, NULL, 'sys:menu:edit',   NULL, 2, 1),
+(15, 4,  '菜单删除',   3, NULL, NULL, 'sys:menu:delete', NULL, 3, 1),
+-- 字典管理按钮
+(16, 5,  '字典新增',   3, NULL, NULL, 'sys:dict:add',    NULL, 1, 1),
+(17, 5,  '字典编辑',   3, NULL, NULL, 'sys:dict:edit',   NULL, 2, 1),
+(18, 5,  '字典删除',   3, NULL, NULL, 'sys:dict:delete', NULL, 3, 1),
+-- 部门管理按钮
+(19, 6,  '部门新增',   3, NULL, NULL, 'sys:dept:add',    NULL, 1, 1),
+(20, 6,  '部门编辑',   3, NULL, NULL, 'sys:dept:edit',   NULL, 2, 1),
+(21, 6,  '部门删除',   3, NULL, NULL, 'sys:dept:delete', NULL, 3, 1),
+-- ===== 目录：系统监控 =====
+(30, 0,  '系统监控',   1, '/system/monitor',    NULL,                         NULL,                'Monitor',        2, 1),
+(31, 30, '操作日志',   2, '/system/operlog',    'system/operlog/index',       NULL,                'Document',       1, 1),
+(32, 30, '登录日志',   2, '/system/loginlog',   'system/loginlog/index',      NULL,                'Lock',           2, 1),
+(33, 30, '在线用户',   2, '/system/online',     'system/online/index',        NULL,                'Connection',     3, 1),
+(34, 30, '服务监控',   2, '/system/monitor/server', 'system/monitor/server/index', NULL,           'Cpu',            4, 1),
+-- ===== 目录：系统工具 =====
+(40, 0,  '系统工具',   1, '/system/tools',      NULL,                         NULL,                'Tools',          3, 1),
+(41, 40, '参数配置',   2, '/system/config',     'system/config/index',        NULL,                'SetUp',          1, 1),
+(42, 40, '通知公告',   2, '/system/notice',     'system/notice/index',        NULL,                'Bell',           2, 1),
+(43, 40, '定时任务',   2, '/system/job',        'system/job/index',           NULL,                'Clock',          3, 1),
+(44, 40, '代码生成',   2, '/system/gen',        'system/gen/index',           NULL,                'MagicStick',     4, 1),
+-- 通知公告按钮
+(45, 42, '公告新增',   3, NULL, NULL, 'sys:notice:add',    NULL, 1, 1),
+(46, 42, '公告编辑',   3, NULL, NULL, 'sys:notice:edit',   NULL, 2, 1),
+(47, 42, '公告删除',   3, NULL, NULL, 'sys:notice:delete', NULL, 3, 1);
+
+-- ----------------------------
+-- 初始化角色
+-- ----------------------------
+INSERT INTO sys_role (role_id, role_name, role_code, data_scope, sort, status) VALUES
+(1, '超级管理员', 'admin', 1, 1, 1);
+
+-- 关联管理员角色（user_id=1 → role_id=1）
+INSERT INTO sys_user_role (user_id, role_id) VALUES (1, 1);
+
+-- 超级管理员关联所有菜单
+INSERT INTO sys_role_menu (role_id, menu_id) SELECT 1, menu_id FROM sys_menu;
 
 -- 初始化部门
 INSERT INTO sys_dept (dept_id, parent_id, ancestors, dept_name, sort, status) VALUES

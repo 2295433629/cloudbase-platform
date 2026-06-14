@@ -8,19 +8,22 @@ import com.cloudbase.common.core.domain.TableDataInfo;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.module.system.entity.SysOperLog;
 import com.cloudbase.module.system.mapper.SysOperLogMapper;
+import com.cloudbase.module.system.model.dto.IdDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
 /**
- * 操作日志管理
- *
- * @author ruoyi
+ * 操作日志管理（重构后使用DTO）
  */
+@Validated
 @RestController
+@RequestMapping("/sys/operLog")
 @RequiredArgsConstructor
 public class SysOperLogController {
 
@@ -30,7 +33,7 @@ public class SysOperLogController {
      * 查询操作日志
      */
     @Log(title = "操作日志管理", businessType = BusinessType.QUERY)
-    @PostMapping("/sys/operLog/page")
+    @PostMapping("/page")
     public TableDataInfo page(@RequestBody Map<String, Object> params) {
         int pageNo = params.containsKey("pageNo") ? Integer.parseInt(params.get("pageNo").toString()) : 1;
         int pageSize = params.containsKey("pageSize") ? Integer.parseInt(params.get("pageSize").toString()) : 20;
@@ -54,7 +57,7 @@ public class SysOperLogController {
      * 清空操作日志
      */
     @Log(title = "操作日志管理", businessType = BusinessType.DELETE)
-    @PostMapping("/sys/operLog/clear")
+    @PostMapping("/clear")
     public AjaxResult clear() {
         operLogMapper.delete(new LambdaQueryWrapper<>());
         return AjaxResult.success();

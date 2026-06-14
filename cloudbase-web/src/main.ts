@@ -8,6 +8,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import router from './router'
 import { setupAxios } from './utils/request'
+import { setupDirectives } from './directives'
 
 const app = createApp(App)
 
@@ -21,5 +22,6 @@ app.use(router)
 app.use(ElementPlus, { locale: zhCn })
 
 setupAxios()
+setupDirectives(app)
 
 app.mount('#app')

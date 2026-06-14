@@ -1,0 +1,38 @@
+# 生产环境配置
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:cloudbase}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      username: ${DB_USER:root}
+      password: ${DB_PASSWORD:root}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      initial-size: 10
+      min-idle: 10
+      max-active: 50
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: 0
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 16
+          min-idle: 4
+
+pom:
+  logging:
+    path: /var/log/cloudbase
+
+cloudbase:
+  cache:
+    type: redis
+
+logging:
+  level:
+    com.cloudbase: warn
+    org.springframework: warn

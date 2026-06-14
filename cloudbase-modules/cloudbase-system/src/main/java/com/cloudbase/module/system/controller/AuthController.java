@@ -2,62 +2,106 @@ package com.cloudbase.module.system.controller;
 
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
-import com.cloudbase.common.core.domain.TableDataInfo;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.common.web.auth.UserContext;
-import com.cloudbase.module.system.service.AuthService;
+import com.cloudbase.module.system.model.dto.ChangePasswordDTO;
+import com.cloudbase.module.system.model.dto.LoginDTO;
+import com.cloudbase.module.system.model.dto.UpdateProfileDTO;
+import com.cloudbase.module.system.service.CaptchaService;
+import com.cloudbase.module.system.service.LoginService;
+import com.cloudbase.module.system.service.ProfileService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
 /**
- * 认证管理
- *
- * @author ruoyi
+ * 认证管理（重构后：分别委托给LoginService/CaptchaService/ProfileService）
  */
+@Validated
 @RestController
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthService authService;
+    private final LoginService loginService;
+    private final CaptchaService captchaService;
+    private final ProfileService profileService;
 
     /**
      * 获取验证码
      */
     @Log(title = "认证管理", businessType = BusinessType.QUERY)
-    @GetMapping("/auth/captcha")
+    @GetMapping("/captcha")
     public AjaxResult captcha() {
-        return AjaxResult.success(authService.generateCaptcha());
+        return AjaxResult.success(captchaService.generateCaptcha());
     }
 
     /**
      * 用户登录
      */
     @Log(title = "认证管理", businessType = BusinessType.OTHER)
-    @PostMapping("/auth/login")
-    public AjaxResult login(@RequestBody Map<String, String> params, HttpServletRequest request) {
+    @PostMapping("/login")
+    public AjaxResult login(@Valid @RequestBody LoginDTO dto, HttpServletRequest request) {
         String ip = getClientIp(request);
-        return AjaxResult.success(authService.login(
-                params.get("account"),
-                params.get("password"),
-                params.get("uuid"),
-                params.get("captcha"),
-                ip
-        ));
+        return AjaxResult.success(loginService.login(
+                dto.getAccount(), dto.getPassword(), dto.getUuid(), dto.getCaptcha(), ip));
     }
 
     /**
      * 退出登录
      */
     @Log(title = "认证管理", businessType = BusinessType.OTHER)
-    @PostMapping("/auth/logout")
+    @PostMapping("/logout")
     public AjaxResult logout(@RequestBody Map<String, String> params) {
-        authService.logout(params.get("token"));
+        loginService.logout(params.get("token"));
+        return AjaxResult.success();
+    }
+
+    // ==================== 个人中心 ====================
+
+    /**
+     * 获取当前登录用户个人信息
+     */
+    @Log(title = "个人中心", businessType = BusinessType.QUERY)
+    @PostMapping("/profile")
+    public AjaxResult getProfile() {
+        Long userId = UserContext.getUserId();
+        if (userId == null) {
+            return AjaxResult.error("未登录");
+        }
+        return AjaxResult.success(profileService.getProfile(userId));
+    }
+
+    /**
+     * 修改个人基本信息
+     */
+    @Log(title = "个人中心", businessType = BusinessType.UPDATE)
+    @PostMapping("/updateProfile")
+    public AjaxResult updateProfile(@RequestBody UpdateProfileDTO dto) {
+        Long userId = UserContext.getUserId();
+        if (userId == null) {
+            return AjaxResult.error("未登录");
+        }
+        profileService.updateProfile(userId, dto.getRealName(), dto.getPhone(),
+                dto.getEmail(), dto.getAvatar());
+        return AjaxResult.success();
+    }
+
+    /**
+     * 修改密码
+     */
+    @Log(title = "个人中心", businessType = BusinessType.UPDATE)
+    @PostMapping("/changePassword")
+    public AjaxResult changePassword(@Valid @RequestBody ChangePasswordDTO dto) {
+        Long userId = UserContext.getUserId();
+        if (userId == null) {
+            return AjaxResult.error("未登录");
+        }
+        profileService.changePassword(userId, dto.getOldPassword(), dto.getNewPassword());
         return AjaxResult.success();
     }
 
@@ -70,62 +114,5 @@ public class AuthController {
             ip = request.getRemoteAddr();
         }
         return "0:0:0:0:0:0:0:1".equals(ip) ? "127.0.0.1" : ip;
-    }
-
-    // ==================== 个人中心 ====================
-
-    /**
-     * 获取当前登录用户个人信息
-     */
-    @Log(title = "个人中心", businessType = BusinessType.QUERY)
-    @PostMapping("/auth/profile")
-    public AjaxResult getProfile() {
-        Long userId = UserContext.getUserId();
-        if (userId == null) {
-            return AjaxResult.error("未登录");
-        }
-        return AjaxResult.success(authService.getProfile(userId));
-    }
-
-    /**
-     * 修改个人基本信息
-     */
-    @Log(title = "个人中心", businessType = BusinessType.UPDATE)
-    @PostMapping("/auth/updateProfile")
-    public AjaxResult updateProfile(@RequestBody Map<String, String> params) {
-        Long userId = UserContext.getUserId();
-        if (userId == null) {
-            return AjaxResult.error("未登录");
-        }
-        authService.updateProfile(
-                userId,
-                params.get("realName"),
-                params.get("phone"),
-                params.get("email"),
-                params.get("avatar")
-        );
-        return AjaxResult.success();
-    }
-
-    /**
-     * 修改密码
-     */
-    @Log(title = "个人中心", businessType = BusinessType.UPDATE)
-    @PostMapping("/auth/changePassword")
-    public AjaxResult changePassword(@RequestBody Map<String, String> params) {
-        Long userId = UserContext.getUserId();
-        if (userId == null) {
-            return AjaxResult.error("未登录");
-        }
-        String oldPassword = params.get("oldPassword");
-        String newPassword = params.get("newPassword");
-        if (oldPassword == null || oldPassword.isEmpty()) {
-            return AjaxResult.error("原密码不能为空");
-        }
-        if (newPassword == null || newPassword.isEmpty()) {
-            return AjaxResult.error("新密码不能为空");
-        }
-        authService.changePassword(userId, oldPassword, newPassword);
-        return AjaxResult.success();
     }
 }

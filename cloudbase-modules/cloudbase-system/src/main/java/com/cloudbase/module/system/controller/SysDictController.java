@@ -1,25 +1,29 @@
 package com.cloudbase.module.system.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
 import com.cloudbase.common.core.domain.TableDataInfo;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.module.system.entity.SysDict;
+import com.cloudbase.module.system.model.dto.DictCreateDTO;
+import com.cloudbase.module.system.model.dto.DictQueryDTO;
+import com.cloudbase.module.system.model.dto.DictUpdateDTO;
+import com.cloudbase.module.system.model.dto.IdDTO;
 import com.cloudbase.module.system.service.ISysDictService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Map;
-
 /**
- * 字典管理
+ * 字典管理（重构后使用DTO+Service）
  */
+@Validated
 @RestController
+@RequestMapping("/sys/dict")
 @RequiredArgsConstructor
 public class SysDictController {
 
@@ -29,28 +33,9 @@ public class SysDictController {
      * 分页查询字典
      */
     @Log(title = "字典管理", businessType = BusinessType.QUERY)
-    @PostMapping("/sys/dict/page")
-    public TableDataInfo page(@RequestBody Map<String, Object> params) {
-        int pageNo = params.containsKey("pageNo") ? Integer.parseInt(params.get("pageNo").toString()) : 1;
-        int pageSize = params.containsKey("pageSize") ? Integer.parseInt(params.get("pageSize").toString()) : 20;
-        pageNo = Math.max(pageNo, 1);
-        pageSize = Math.min(Math.max(pageSize, 1), 200);
-
-        LambdaQueryWrapper<SysDict> wrapper = new LambdaQueryWrapper<>();
-        if (params.containsKey("dictType") && params.get("dictType") != null
-                && !params.get("dictType").toString().isEmpty()) {
-            wrapper.like(SysDict::getDictType, params.get("dictType"));
-        }
-        if (params.containsKey("dictLabel") && params.get("dictLabel") != null
-                && !params.get("dictLabel").toString().isEmpty()) {
-            wrapper.like(SysDict::getDictLabel, params.get("dictLabel"));
-        }
-        if (params.containsKey("status") && params.get("status") != null) {
-            wrapper.eq(SysDict::getStatus, params.get("status"));
-        }
-        wrapper.orderByAsc(SysDict::getSort);
-
-        Page<SysDict> page = sysDictService.page(new Page<>(pageNo, pageSize), wrapper);
+    @PostMapping("/page")
+    public TableDataInfo page(@Valid @RequestBody DictQueryDTO query) {
+        var page = sysDictService.pageDicts(query);
         return TableDataInfo.build(page.getRecords(), page.getTotal());
     }
 
@@ -58,25 +43,25 @@ public class SysDictController {
      * 按字典类型查询字典值列表（不分页，前端下拉用）
      */
     @Log(title = "字典管理", businessType = BusinessType.QUERY)
-    @PostMapping("/sys/dict/listByType")
-    public AjaxResult listByType(@RequestBody Map<String, String> params) {
-        String dictType = params.get("dictType");
-        List<SysDict> list = sysDictService.list(
-                new LambdaQueryWrapper<SysDict>()
-                        .eq(SysDict::getDictType, dictType)
-                        .eq(SysDict::getStatus, 1)
-                        .orderByAsc(SysDict::getSort)
-        );
-        return AjaxResult.success(list);
+    @PostMapping("/listByType")
+    public AjaxResult listByType(@RequestBody java.util.Map<String, String> params) {
+        return AjaxResult.success(sysDictService.listByDictType(params.get("dictType")));
     }
 
     /**
      * 新增字典
      */
     @Log(title = "字典管理", businessType = BusinessType.INSERT)
-    @PostMapping("/sys/dict/add")
-    public AjaxResult add(@RequestBody SysDict dict) {
-        sysDictService.save(dict);
+    @PostMapping("/add")
+    public AjaxResult add(@Valid @RequestBody DictCreateDTO dto) {
+        SysDict dict = new SysDict();
+        dict.setDictType(dto.getDictType());
+        dict.setDictLabel(dto.getDictLabel());
+        dict.setDictValue(dto.getDictValue());
+        dict.setSort(dto.getSort());
+        dict.setStatus(dto.getStatus());
+        dict.setRemark(dto.getRemark());
+        sysDictService.createDict(dict);
         return AjaxResult.success();
     }
 
@@ -84,9 +69,17 @@ public class SysDictController {
      * 编辑字典
      */
     @Log(title = "字典管理", businessType = BusinessType.UPDATE)
-    @PostMapping("/sys/dict/edit")
-    public AjaxResult edit(@RequestBody SysDict dict) {
-        sysDictService.updateById(dict);
+    @PostMapping("/edit")
+    public AjaxResult edit(@Valid @RequestBody DictUpdateDTO dto) {
+        SysDict dict = new SysDict();
+        dict.setDictId(dto.getDictId());
+        dict.setDictType(dto.getDictType());
+        dict.setDictLabel(dto.getDictLabel());
+        dict.setDictValue(dto.getDictValue());
+        dict.setSort(dto.getSort());
+        dict.setStatus(dto.getStatus());
+        dict.setRemark(dto.getRemark());
+        sysDictService.updateDict(dict);
         return AjaxResult.success();
     }
 
@@ -94,9 +87,9 @@ public class SysDictController {
      * 删除字典
      */
     @Log(title = "字典管理", businessType = BusinessType.DELETE)
-    @PostMapping("/sys/dict/delete")
-    public AjaxResult delete(@RequestBody Map<String, Long> params) {
-        sysDictService.removeById(params.get("dictId"));
+    @PostMapping("/delete")
+    public AjaxResult delete(@Valid @RequestBody IdDTO dto) {
+        sysDictService.deleteDict(dto.getId());
         return AjaxResult.success();
     }
 
@@ -104,15 +97,11 @@ public class SysDictController {
      * 修改字典状态
      */
     @Log(title = "字典管理", businessType = BusinessType.UPDATE)
-    @PostMapping("/sys/dict/updateStatus")
-    public AjaxResult updateStatus(@RequestBody Map<String, Object> params) {
-        if (params.get("dictId") == null || params.get("status") == null) {
-            return AjaxResult.error("参数缺失");
-        }
-        SysDict dict = new SysDict();
-        dict.setDictId(Long.parseLong(params.get("dictId").toString()));
-        dict.setStatus(Integer.parseInt(params.get("status").toString()));
-        sysDictService.updateById(dict);
+    @PostMapping("/updateStatus")
+    public AjaxResult updateStatus(@RequestBody java.util.Map<String, Object> params) {
+        Long dictId = Long.parseLong(params.get("dictId").toString());
+        Integer status = Integer.parseInt(params.get("status").toString());
+        sysDictService.updateStatus(dictId, status);
         return AjaxResult.success();
     }
 }

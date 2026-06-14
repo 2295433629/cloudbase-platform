@@ -8,19 +8,25 @@ import com.cloudbase.common.core.domain.TableDataInfo;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.module.system.entity.SysNotice;
 import com.cloudbase.module.system.mapper.SysNoticeMapper;
+import com.cloudbase.module.system.model.dto.IdDTO;
+import com.cloudbase.module.system.model.dto.NoticeCreateDTO;
+import com.cloudbase.module.system.model.dto.NoticeUpdateDTO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
 /**
- * 通知公告管理
- *
- * @author ruoyi
+ * 通知公告管理（重构后使用DTO）
  */
+@Validated
 @RestController
+@RequestMapping("/sys/notice")
 @RequiredArgsConstructor
 public class SysNoticeController {
 
@@ -30,7 +36,7 @@ public class SysNoticeController {
      * 查询公告列表
      */
     @Log(title = "通知公告管理", businessType = BusinessType.QUERY)
-    @PostMapping("/sys/notice/page")
+    @PostMapping("/page")
     public TableDataInfo page(@RequestBody Map<String, Object> params) {
         int pageNo = params.containsKey("pageNo") ? Integer.parseInt(params.get("pageNo").toString()) : 1;
         int pageSize = params.containsKey("pageSize") ? Integer.parseInt(params.get("pageSize").toString()) : 20;
@@ -51,17 +57,22 @@ public class SysNoticeController {
      * 查看公告详情
      */
     @Log(title = "通知公告管理", businessType = BusinessType.QUERY)
-    @PostMapping("/sys/notice/detail")
-    public AjaxResult detail(@RequestBody Map<String, Long> params) {
-        return AjaxResult.success(noticeMapper.selectById(params.get("noticeId")));
+    @PostMapping("/detail")
+    public AjaxResult detail(@Valid @RequestBody IdDTO dto) {
+        return AjaxResult.success(noticeMapper.selectById(dto.getId()));
     }
 
     /**
      * 新增公告
      */
     @Log(title = "通知公告管理", businessType = BusinessType.INSERT)
-    @PostMapping("/sys/notice/add")
-    public AjaxResult add(@RequestBody SysNotice notice) {
+    @PostMapping("/add")
+    public AjaxResult add(@Valid @RequestBody NoticeCreateDTO dto) {
+        SysNotice notice = new SysNotice();
+        notice.setNoticeTitle(dto.getNoticeTitle());
+        notice.setNoticeType(dto.getNoticeType());
+        notice.setNoticeContent(dto.getNoticeContent());
+        notice.setStatus(dto.getStatus());
         noticeMapper.insert(notice);
         return AjaxResult.success();
     }
@@ -70,8 +81,14 @@ public class SysNoticeController {
      * 编辑公告
      */
     @Log(title = "通知公告管理", businessType = BusinessType.UPDATE)
-    @PostMapping("/sys/notice/edit")
-    public AjaxResult edit(@RequestBody SysNotice notice) {
+    @PostMapping("/edit")
+    public AjaxResult edit(@Valid @RequestBody NoticeUpdateDTO dto) {
+        SysNotice notice = new SysNotice();
+        notice.setNoticeId(dto.getNoticeId());
+        notice.setNoticeTitle(dto.getNoticeTitle());
+        notice.setNoticeType(dto.getNoticeType());
+        notice.setNoticeContent(dto.getNoticeContent());
+        notice.setStatus(dto.getStatus());
         noticeMapper.updateById(notice);
         return AjaxResult.success();
     }
@@ -80,9 +97,9 @@ public class SysNoticeController {
      * 删除公告
      */
     @Log(title = "通知公告管理", businessType = BusinessType.DELETE)
-    @PostMapping("/sys/notice/delete")
-    public AjaxResult delete(@RequestBody Map<String, Long> params) {
-        noticeMapper.deleteById(params.get("noticeId"));
+    @PostMapping("/delete")
+    public AjaxResult delete(@Valid @RequestBody IdDTO dto) {
+        noticeMapper.deleteById(dto.getId());
         return AjaxResult.success();
     }
 }

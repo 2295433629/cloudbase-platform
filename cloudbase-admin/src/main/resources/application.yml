@@ -1,9 +1,8 @@
-server:
-  port: 8080
-
 spring:
   application:
     name: cloudbase-platform
+  profiles:
+    active: dev
 
   # MySQL配置
   datasource:

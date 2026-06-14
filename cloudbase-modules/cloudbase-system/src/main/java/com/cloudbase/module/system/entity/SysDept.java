@@ -31,6 +31,8 @@ public class SysDept extends BaseEntity {
 
     private String phone;
 
+    private String email;
+
     private Integer status;
 
     /** 子部门列表（非数据库字段，前端用） */

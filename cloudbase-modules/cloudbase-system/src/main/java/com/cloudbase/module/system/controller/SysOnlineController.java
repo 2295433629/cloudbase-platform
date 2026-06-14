@@ -7,8 +7,10 @@ import com.cloudbase.common.web.cache.CacheService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.*;
@@ -16,11 +18,11 @@ import java.util.stream.Collectors;
 
 /**
  * 在线用户管理
- *
- * @author ruoyi
  */
 @Slf4j
+@Validated
 @RestController
+@RequestMapping("/sys/online")
 @RequiredArgsConstructor
 public class SysOnlineController {
 
@@ -33,7 +35,7 @@ public class SysOnlineController {
      * 在线用户列表
      */
     @Log(title = "在线用户管理", businessType = BusinessType.QUERY)
-    @PostMapping("/sys/online/list")
+    @PostMapping("/list")
     public AjaxResult list() {
         Set<String> keys = cacheService.keys(TOKEN_PREFIX + "*");
         log.debug("在线用户查询: keys={}", keys);
@@ -66,7 +68,7 @@ public class SysOnlineController {
      * 强制下线
      */
     @Log(title = "在线用户管理", businessType = BusinessType.DELETE)
-    @PostMapping("/sys/online/forceLogout")
+    @PostMapping("/forceLogout")
     public AjaxResult forceLogout(@RequestBody Map<String, String> params) {
         String token = params.get("token");
         cacheService.delete(TOKEN_PREFIX + token);

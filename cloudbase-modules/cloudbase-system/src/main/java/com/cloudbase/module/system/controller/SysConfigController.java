@@ -9,19 +9,25 @@ import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.common.web.cache.CacheService;
 import com.cloudbase.module.system.entity.SysConfig;
 import com.cloudbase.module.system.mapper.SysConfigMapper;
+import com.cloudbase.module.system.model.dto.ConfigCreateDTO;
+import com.cloudbase.module.system.model.dto.ConfigUpdateDTO;
+import com.cloudbase.module.system.model.dto.IdDTO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
 /**
- * 参数配置管理
- *
- * @author ruoyi
+ * 参数配置管理（重构后使用DTO）
  */
+@Validated
 @RestController
+@RequestMapping("/sys/config")
 @RequiredArgsConstructor
 public class SysConfigController {
 
@@ -32,7 +38,7 @@ public class SysConfigController {
      * 查询参数列表
      */
     @Log(title = "参数配置管理", businessType = BusinessType.QUERY)
-    @PostMapping("/sys/config/page")
+    @PostMapping("/page")
     public TableDataInfo page(@RequestBody Map<String, Object> params) {
         int pageNo = params.containsKey("pageNo") ? Integer.parseInt(params.get("pageNo").toString()) : 1;
         int pageSize = params.containsKey("pageSize") ? Integer.parseInt(params.get("pageSize").toString()) : 20;
@@ -53,7 +59,7 @@ public class SysConfigController {
      * 根据键名查询参数
      */
     @Log(title = "参数配置管理", businessType = BusinessType.QUERY)
-    @PostMapping("/sys/config/getByKey")
+    @PostMapping("/getByKey")
     public AjaxResult getByKey(@RequestBody Map<String, String> params) {
         String key = params.get("configKey");
         if (key == null || key.isEmpty()) {
@@ -65,8 +71,7 @@ public class SysConfigController {
         }
 
         SysConfig config = configMapper.selectOne(
-                new LambdaQueryWrapper<SysConfig>()
-                        .eq(SysConfig::getConfigKey, key));
+                new LambdaQueryWrapper<SysConfig>().eq(SysConfig::getConfigKey, key));
         if (config != null) {
             cacheService.set("sys:config:" + key, config.getConfigValue());
             return AjaxResult.success(config.getConfigValue());
@@ -78,8 +83,14 @@ public class SysConfigController {
      * 新增参数
      */
     @Log(title = "参数配置管理", businessType = BusinessType.INSERT)
-    @PostMapping("/sys/config/add")
-    public AjaxResult add(@RequestBody SysConfig config) {
+    @PostMapping("/add")
+    public AjaxResult add(@Valid @RequestBody ConfigCreateDTO dto) {
+        SysConfig config = new SysConfig();
+        config.setConfigName(dto.getConfigName());
+        config.setConfigKey(dto.getConfigKey());
+        config.setConfigValue(dto.getConfigValue());
+        config.setConfigType(dto.getConfigType());
+        config.setRemark(dto.getRemark());
         configMapper.insert(config);
         cacheService.set("sys:config:" + config.getConfigKey(), config.getConfigValue());
         return AjaxResult.success();
@@ -89,15 +100,21 @@ public class SysConfigController {
      * 编辑参数
      */
     @Log(title = "参数配置管理", businessType = BusinessType.UPDATE)
-    @PostMapping("/sys/config/edit")
-    public AjaxResult edit(@RequestBody SysConfig config) {
-        // 先获取旧记录，处理 configKey 可能被修改的情况
-        SysConfig oldConfig = configMapper.selectById(config.getConfigId());
+    @PostMapping("/edit")
+    public AjaxResult edit(@Valid @RequestBody ConfigUpdateDTO dto) {
+        SysConfig oldConfig = configMapper.selectById(dto.getConfigId());
         if (oldConfig == null) {
             return AjaxResult.error("参数不存在");
         }
+        SysConfig config = new SysConfig();
+        config.setConfigId(dto.getConfigId());
+        config.setConfigName(dto.getConfigName());
+        config.setConfigKey(dto.getConfigKey());
+        config.setConfigValue(dto.getConfigValue());
+        config.setConfigType(dto.getConfigType());
+        config.setRemark(dto.getRemark());
         configMapper.updateById(config);
-        // 如果 configKey 发生变更，需删除旧缓存
+        // 处理缓存
         if (oldConfig.getConfigKey() != null
                 && !oldConfig.getConfigKey().equals(config.getConfigKey())) {
             cacheService.delete("sys:config:" + oldConfig.getConfigKey());
@@ -110,11 +127,11 @@ public class SysConfigController {
      * 删除参数
      */
     @Log(title = "参数配置管理", businessType = BusinessType.DELETE)
-    @PostMapping("/sys/config/delete")
-    public AjaxResult delete(@RequestBody Map<String, Long> params) {
-        SysConfig config = configMapper.selectById(params.get("configId"));
+    @PostMapping("/delete")
+    public AjaxResult delete(@Valid @RequestBody IdDTO dto) {
+        SysConfig config = configMapper.selectById(dto.getId());
         if (config != null) {
-            configMapper.deleteById(params.get("configId"));
+            configMapper.deleteById(dto.getId());
             cacheService.delete("sys:config:" + config.getConfigKey());
         }
         return AjaxResult.success();

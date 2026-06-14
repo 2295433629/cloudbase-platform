@@ -47,13 +47,15 @@
         <!-- 文档 -->
         <knife4j.version>4.5.0</knife4j.version>
 
+        <!-- Spring Boot Actuator -->
+        <spring-boot-actuator.version>3.4.3</spring-boot-actuator.version>
+
         <!-- 工具 -->
         <easyexcel.version>4.0.3</easyexcel.version>
         <jasypt.version>3.0.5</jasypt.version>
         <captcha.version>1.6.2</captcha.version>
         <oshi.version>6.6.5</oshi.version>
         <velocity.version>2.4</velocity.version>
-        <quartz.version>2.5.0</quartz.version>
     </properties>
 
     <dependencyManagement>
@@ -173,13 +175,6 @@
                 <groupId>com.github.oshi</groupId>
                 <artifactId>oshi-core</artifactId>
                 <version>${oshi.version}</version>
-            </dependency>
-
-            <!-- Quartz 定时任务 -->
-            <dependency>
-                <groupId>org.quartz-scheduler</groupId>
-                <artifactId>quartz</artifactId>
-                <version>${quartz.version}</version>
             </dependency>
 
             <!-- Velocity 代码生成模板引擎 -->

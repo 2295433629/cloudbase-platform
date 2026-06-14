@@ -1,22 +1,27 @@
 package com.cloudbase.module.system.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.module.system.entity.SysMenu;
+import com.cloudbase.module.system.model.dto.IdDTO;
+import com.cloudbase.module.system.model.dto.MenuCreateDTO;
+import com.cloudbase.module.system.model.dto.MenuUpdateDTO;
 import com.cloudbase.module.system.service.ISysMenuService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
 /**
- * 菜单管理
+ * 菜单管理（重构后使用DTO+Service）
  */
+@Validated
 @RestController
+@RequestMapping("/sys/menu")
 @RequiredArgsConstructor
 public class SysMenuController {
 
@@ -26,7 +31,7 @@ public class SysMenuController {
      * 获取菜单树（全量，不分页）
      */
     @Log(title = "菜单管理", businessType = BusinessType.QUERY)
-    @PostMapping("/sys/menu/tree")
+    @PostMapping("/tree")
     public AjaxResult tree() {
         return AjaxResult.success(sysMenuService.getMenuTree());
     }
@@ -35,9 +40,20 @@ public class SysMenuController {
      * 新增菜单
      */
     @Log(title = "菜单管理", businessType = BusinessType.INSERT)
-    @PostMapping("/sys/menu/add")
-    public AjaxResult add(@RequestBody SysMenu menu) {
-        sysMenuService.save(menu);
+    @PostMapping("/add")
+    public AjaxResult add(@Valid @RequestBody MenuCreateDTO dto) {
+        SysMenu menu = new SysMenu();
+        menu.setParentId(dto.getParentId());
+        menu.setMenuName(dto.getMenuName());
+        menu.setMenuType(dto.getMenuType());
+        menu.setPath(dto.getPath());
+        menu.setComponent(dto.getComponent());
+        menu.setPerms(dto.getPerms());
+        menu.setIcon(dto.getIcon());
+        menu.setSort(dto.getSort());
+        menu.setHidden(dto.getHidden() != null ? dto.getHidden() : 0);
+        menu.setStatus(dto.getStatus());
+        sysMenuService.createMenu(menu);
         return AjaxResult.success();
     }
 
@@ -45,9 +61,21 @@ public class SysMenuController {
      * 编辑菜单
      */
     @Log(title = "菜单管理", businessType = BusinessType.UPDATE)
-    @PostMapping("/sys/menu/edit")
-    public AjaxResult edit(@RequestBody SysMenu menu) {
-        sysMenuService.updateById(menu);
+    @PostMapping("/edit")
+    public AjaxResult edit(@Valid @RequestBody MenuUpdateDTO dto) {
+        SysMenu menu = new SysMenu();
+        menu.setMenuId(dto.getMenuId());
+        menu.setParentId(dto.getParentId());
+        menu.setMenuName(dto.getMenuName());
+        menu.setMenuType(dto.getMenuType());
+        menu.setPath(dto.getPath());
+        menu.setComponent(dto.getComponent());
+        menu.setPerms(dto.getPerms());
+        menu.setIcon(dto.getIcon());
+        menu.setSort(dto.getSort());
+        menu.setHidden(dto.getHidden() != null ? dto.getHidden() : 0);
+        menu.setStatus(dto.getStatus());
+        sysMenuService.updateMenu(menu);
         return AjaxResult.success();
     }
 
@@ -55,17 +83,9 @@ public class SysMenuController {
      * 删除菜单
      */
     @Log(title = "菜单管理", businessType = BusinessType.DELETE)
-    @PostMapping("/sys/menu/delete")
-    public AjaxResult delete(@RequestBody Map<String, Long> params) {
-        Long menuId = params.get("menuId");
-        // 检查是否存在子菜单
-        long childCount = sysMenuService.count(
-                new LambdaQueryWrapper<SysMenu>().eq(SysMenu::getParentId, menuId)
-        );
-        if (childCount > 0) {
-            return AjaxResult.error("存在子菜单，不允许删除");
-        }
-        sysMenuService.removeById(menuId);
+    @PostMapping("/delete")
+    public AjaxResult delete(@Valid @RequestBody IdDTO dto) {
+        sysMenuService.deleteMenu(dto.getId());
         return AjaxResult.success();
     }
 
@@ -73,15 +93,11 @@ public class SysMenuController {
      * 修改菜单状态
      */
     @Log(title = "菜单管理", businessType = BusinessType.UPDATE)
-    @PostMapping("/sys/menu/updateStatus")
-    public AjaxResult updateStatus(@RequestBody Map<String, Object> params) {
-        if (params.get("menuId") == null || params.get("status") == null) {
-            return AjaxResult.error("参数缺失");
-        }
-        SysMenu menu = new SysMenu();
-        menu.setMenuId(Long.parseLong(params.get("menuId").toString()));
-        menu.setStatus(Integer.parseInt(params.get("status").toString()));
-        sysMenuService.updateById(menu);
+    @PostMapping("/updateStatus")
+    public AjaxResult updateStatus(@RequestBody java.util.Map<String, Object> params) {
+        Long menuId = Long.parseLong(params.get("menuId").toString());
+        Integer status = Integer.parseInt(params.get("status").toString());
+        sysMenuService.updateStatus(menuId, status);
         return AjaxResult.success();
     }
 }

@@ -9,18 +9,20 @@ import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.module.system.entity.SysLoginLog;
 import com.cloudbase.module.system.mapper.SysLoginLogMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
 /**
- * 登录日志管理
- *
- * @author ruoyi
+ * 登录日志管理（重构后使用DTO）
  */
+@Validated
 @RestController
+@RequestMapping("/sys/loginLog")
 @RequiredArgsConstructor
 public class SysLoginLogController {
 
@@ -30,7 +32,7 @@ public class SysLoginLogController {
      * 查询登录日志
      */
     @Log(title = "登录日志管理", businessType = BusinessType.QUERY)
-    @PostMapping("/sys/loginLog/page")
+    @PostMapping("/page")
     public TableDataInfo page(@RequestBody Map<String, Object> params) {
         int pageNo = params.containsKey("pageNo") ? Integer.parseInt(params.get("pageNo").toString()) : 1;
         int pageSize = params.containsKey("pageSize") ? Integer.parseInt(params.get("pageSize").toString()) : 20;
@@ -51,7 +53,7 @@ public class SysLoginLogController {
      * 清空登录日志
      */
     @Log(title = "登录日志管理", businessType = BusinessType.DELETE)
-    @PostMapping("/sys/loginLog/clear")
+    @PostMapping("/clear")
     public AjaxResult clear() {
         loginLogMapper.delete(new LambdaQueryWrapper<>());
         return AjaxResult.success();

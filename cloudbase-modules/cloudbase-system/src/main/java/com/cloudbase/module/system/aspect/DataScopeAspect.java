@@ -4,18 +4,19 @@ import com.cloudbase.common.core.annotation.DataScope;
 import com.cloudbase.common.web.auth.UserContext;
 import com.cloudbase.module.system.entity.SysRole;
 import com.cloudbase.module.system.entity.SysUser;
+import com.cloudbase.module.system.entity.SysUserRole;
 import com.cloudbase.module.system.mapper.SysRoleMapper;
 import com.cloudbase.module.system.mapper.SysUserMapper;
+import com.cloudbase.module.system.mapper.SysUserRoleMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.Method;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 数据权限切面 - 核心设计：在SQL执行前注入数据过滤条件
@@ -35,6 +36,7 @@ public class DataScopeAspect {
 
     private final SysUserMapper sysUserMapper;
     private final SysRoleMapper sysRoleMapper;
+    private final SysUserRoleMapper sysUserRoleMapper;
 
     @Before("@annotation(dataScope)")
     public void doBefore(JoinPoint joinPoint, DataScope dataScope) throws Throwable {
@@ -45,7 +47,6 @@ public class DataScopeAspect {
         if (currentUser == null) return;
 
         // 超级管理员：不限制数据
-        // 这里简化处理：admin账号=全部权限
         if ("admin".equals(currentUser.getAccount())) return;
 
         // 查找可注入dataScope的Map参数
@@ -61,34 +62,33 @@ public class DataScopeAspect {
     }
 
     private String buildDataScopeSql(SysUser user, DataScope dataScope) {
-        // 获取用户角色，取最小的dataScope值（最严格的权限）
         Integer minScope = getMinDataScope(user);
-        if (minScope == null) minScope = 5; // 默认仅本人
+        if (minScope == null) minScope = 5;
 
         StringBuilder sql = new StringBuilder();
 
         switch (minScope) {
-            case 1: // 全部权限 - 不添加过滤
+            case 1:
                 return "";
-            case 2: // 自定义 - 根据角色关联的部门
+            case 2:
                 Long deptIds = getCustomDeptIds(user);
                 if (deptIds != null) {
                     sql.append(" AND ").append(dataScope.deptAlias()).append(".dept_id IN (").append(deptIds).append(") ");
                 }
                 break;
-            case 3: // 本部门
+            case 3:
                 if (user.getDeptId() != null) {
                     sql.append(" AND ").append(dataScope.deptAlias()).append(".dept_id = ").append(user.getDeptId()).append(" ");
                 }
                 break;
-            case 4: // 本部门及以下
+            case 4:
                 if (user.getDeptId() != null) {
                     sql.append(" AND (").append(dataScope.deptAlias()).append(".dept_id = ").append(user.getDeptId())
                        .append(" OR FIND_IN_SET(").append(user.getDeptId()).append(", ").append(dataScope.deptAlias())
                        .append(".dept_id) > 0) ");
                 }
                 break;
-            case 5: // 仅本人
+            case 5:
                 sql.append(" AND ").append(dataScope.userAlias()).append(".create_user = ").append(user.getUserId()).append(" ");
                 break;
             default:
@@ -97,14 +97,29 @@ public class DataScopeAspect {
         return sql.toString();
     }
 
+    /**
+     * 通过用户-角色关联表查询当前用户的角色，取最小dataScope
+     * FIX: 原实现查询所有角色，现已修正为通过SysUserRoleMapper关联查询
+     */
     private Integer getMinDataScope(SysUser user) {
-        // 简化：根据用户ID查询关联角色的dataScope最小值
+        // 通过用户-角色关联表查询当前用户的所有角色ID
+        List<Long> roleIds = sysUserRoleMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SysUserRole>()
+                        .eq(SysUserRole::getUserId, user.getUserId())
+        ).stream().map(SysUserRole::getRoleId).collect(Collectors.toList());
+
+        if (roleIds.isEmpty()) {
+            return 5; // 无角色：仅本人
+        }
+
+        // 查询这些角色的详细信息，取启用的角色中最小dataScope
         List<SysRole> roles = sysRoleMapper.selectList(
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<>()
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SysRole>()
+                        .in(SysRole::getRoleId, roleIds)
+                        .eq(SysRole::getStatus, 1)
         );
-        // 实际项目应该通过用户-角色关联表查询
+
         return roles.stream()
-                .filter(r -> r.getStatus() == 1)
                 .map(SysRole::getDataScope)
                 .min(Integer::compareTo)
                 .orElse(5);
