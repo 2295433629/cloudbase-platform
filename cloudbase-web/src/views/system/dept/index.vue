@@ -1,42 +1,58 @@
 <template>
   <div class="dept-container">
-    <div class="toolbar">
-      <el-input v-model="searchName" placeholder="部门名称" style="width: 200px" clearable @clear="fetchData" />
-      <el-button type="primary" @click="fetchData">查询</el-button>
-      <el-button type="primary" @click="handleAdd(null)">新增部门</el-button>
-    </div>
+    <el-card class="search-card">
+      <div class="toolbar">
+        <el-input v-model="searchName" placeholder="部门名称" style="width: 200px" clearable @clear="fetchData" />
+        <el-button type="primary" @click="fetchData">查询</el-button>
+        <el-button type="success" size="small" @click="handleExport" :disabled="filteredData.length === 0">
+          <el-icon><Download /></el-icon>导出
+        </el-button>
+        <el-button type="primary" @click="handleAdd(null)">
+          <el-icon><Plus /></el-icon>新增部门
+        </el-button>
+      </div>
+    </el-card>
 
-    <el-table :data="filteredData" row-key="deptId" border default-expand-all v-loading="loading"
-              :tree-props="{ children: 'children' }">
-      <el-table-column prop="deptName" label="部门名称" min-width="180" />
-      <el-table-column prop="sort" label="排序" width="80" />
-      <el-table-column prop="leader" label="负责人" width="120" />
-      <el-table-column prop="phone" label="电话" width="150" />
-      <el-table-column label="状态" width="80">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
-            {{ row.status === 1 ? '启用' : '禁用' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="260" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="handleAdd(row)">新增子部门</el-button>
-          <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button link type="warning" size="small" @click="handleStatus(row)">
-            {{ row.status === 1 ? '禁用' : '启用' }}
-          </el-button>
-          <el-popconfirm title="确定删除该部门？" @confirm="handleDelete(row)">
-            <template #reference>
-              <el-button link type="danger" size="small">删除</el-button>
-            </template>
-          </el-popconfirm>
-        </template>
-      </el-table-column>
-    </el-table>
+    <el-card class="table-card">
+      <el-table
+        :data="filteredData"
+        row-key="deptId"
+        border
+        default-expand-all
+        v-loading="loading"
+        :tree-props="{ children: 'children' }"
+        :header-cell-style="{ background: '#fafafa', color: '#303133', fontWeight: '600' }"
+      >
+        <el-table-column prop="deptName" label="部门名称" min-width="180" />
+        <el-table-column prop="sort" label="排序" width="80" align="center" />
+        <el-table-column prop="leader" label="负责人" width="120" />
+        <el-table-column prop="phone" label="电话" width="150" />
+        <el-table-column label="状态" width="80" align="center">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
+              {{ row.status === 1 ? '启用' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="260" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" size="small" @click="handleAdd(row)">新增</el-button>
+            <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="warning" size="small" @click="handleStatus(row)">
+              {{ row.status === 1 ? '禁用' : '启用' }}
+            </el-button>
+            <el-popconfirm title="确定删除该部门？" @confirm="handleDelete(row)">
+              <template #reference>
+                <el-button link type="danger" size="small">删除</el-button>
+              </template>
+            </el-popconfirm>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑部门' : '新增部门'" width="500px">
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑部门' : '新增部门'" width="500px" destroy-on-close>
       <el-form :model="form" :rules="formRules" ref="formRef" label-width="90px">
         <el-form-item label="上级部门">
           <el-tree-select
@@ -74,21 +90,24 @@
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { getDeptTree, addDept, editDept, deleteDept, updateDeptStatus } from '@/api/system'
-import { ElMessage } from 'element-plus'
+<script setup lang="ts">
+import {computed, onMounted, reactive, ref} from 'vue'
+import {addDept, deleteDept, editDept, getDeptTree, updateDeptStatus} from '@/api/system'
+import {ElMessage} from 'element-plus'
+import * as XLSX from 'xlsx'
+import {Download, Plus} from '@element-plus/icons-vue'
+import type {SysDept} from '@/types/system'
 
 const loading = ref(false)
-const treeData = ref([])
+const treeData = ref<SysDept[]>([])
 const searchName = ref('')
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const submitLoading = ref(false)
-const formRef = ref(null)
+const formRef = ref()
 
 const form = reactive({
-  deptId: null,
+  deptId: undefined as number | undefined,
   parentId: 0,
   deptName: '',
   sort: 0,
@@ -101,22 +120,33 @@ const formRules = {
   deptName: [{ required: true, message: '请输入部门名称', trigger: 'blur' }]
 }
 
-const treeSelectData = ref([])
+const treeSelectData = ref<SysDept[]>([])
 
-// 前端按名称过滤树（递归保留匹配节点及其含匹配子节点的祖先）
+const flatAllDepts = computed(() => {
+  const list: SysDept[] = []
+  const collect = (nodes: SysDept[]) => {
+    for (const n of nodes) {
+      list.push(n)
+      if (n.children?.length) collect(n.children)
+    }
+  }
+  collect(treeData.value)
+  return list
+})
+
 const filteredData = computed(() => {
   if (!searchName.value) return treeData.value
   return filterTree(treeData.value, searchName.value.toLowerCase())
 })
 
-function filterTree(nodes, keyword) {
+function filterTree(nodes: SysDept[], keyword: string): SysDept[] {
   return nodes.reduce((acc, node) => {
     const children = node.children ? filterTree(node.children, keyword) : []
     if (node.deptName.toLowerCase().includes(keyword) || children.length > 0) {
       acc.push({ ...node, children })
     }
     return acc
-  }, [])
+  }, [] as SysDept[])
 }
 
 async function fetchData() {
@@ -124,22 +154,22 @@ async function fetchData() {
   try {
     const res = await getDeptTree()
     treeData.value = res
-    treeSelectData.value = [{ deptId: 0, deptName: '顶级部门', children: res }]
+    treeSelectData.value = [{ deptId: 0, deptName: '顶级部门', parentId: 0, sort: 0, leader: '', phone: '', email: '', status: 1, children: res }] as any
   } finally {
     loading.value = false
   }
 }
 
-function handleAdd(row) {
+function handleAdd(row: any) {
   isEdit.value = false
   Object.assign(form, {
-    deptId: null, parentId: row ? row.deptId : 0,
+    deptId: undefined, parentId: row ? row.deptId : 0,
     deptName: '', sort: 0, leader: '', phone: '', status: 1
   })
   dialogVisible.value = true
 }
 
-function handleEdit(row) {
+function handleEdit(row: any) {
   isEdit.value = true
   Object.assign(form, {
     deptId: row.deptId, parentId: row.parentId || 0,
@@ -169,17 +199,44 @@ async function submitForm() {
   }
 }
 
-async function handleStatus(row) {
+async function handleStatus(row: any) {
   const status = row.status === 1 ? 0 : 1
   await updateDeptStatus({ deptId: row.deptId, status })
   ElMessage.success('状态更新成功')
   fetchData()
 }
 
-async function handleDelete(row) {
-  await deleteDept({ deptId: row.deptId })
+async function handleDelete(row: any) {
+  await deleteDept({ id: row.deptId })
   ElMessage.success('删除成功')
   fetchData()
+}
+
+// 导出 Excel
+function handleExport() {
+  const exportData: any[] = []
+  let level = 0
+  const collect = (nodes: SysDept[], lvl: number) => {
+    for (const n of nodes) {
+      exportData.push({
+        '部门层级': '  '.repeat(lvl) + '└ ' + (lvl + 1),
+        '部门名称': n.deptName,
+        '排序': n.sort,
+        '负责人': n.leader,
+        '电话': n.phone,
+        '状态': n.status === 1 ? '启用' : '禁用'
+      })
+      if (n.children?.length) collect(n.children, lvl + 1)
+    }
+  }
+  collect(flatAllDepts.value, 0)
+
+  const ws = XLSX.utils.json_to_sheet(exportData)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '部门列表')
+  ws['!cols'] = [{ wch: 20 }, { wch: 20 }, { wch: 8 }, { wch: 12 }, { wch: 15 }, { wch: 8 }]
+  XLSX.writeFile(wb, `部门列表_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`)
+  ElMessage.success('导出成功')
 }
 
 onMounted(() => { fetchData() })
@@ -187,5 +244,5 @@ onMounted(() => { fetchData() })
 
 <style scoped>
 .dept-container { display: flex; flex-direction: column; gap: 16px; }
-.toolbar { display: flex; gap: 12px; justify-content: flex-end; }
+.toolbar { display: flex; gap: 12px; justify-content: flex-end; align-items: center; }
 </style>

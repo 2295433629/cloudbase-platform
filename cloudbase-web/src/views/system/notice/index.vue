@@ -47,8 +47,8 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { ElMessage } from 'element-plus'
+import {reactive, ref} from 'vue'
+import {ElMessage} from 'element-plus'
 import api from '@/api'
 
 const tableData = ref([])
@@ -70,7 +70,7 @@ loadData()
 const handleAdd = () => { dialogTitle.value = '新增公告'; viewMode.value = false; Object.assign(form, { noticeId: null, noticeTitle: '', noticeType: 1, noticeContent: '', status: 1 }); dialogVisible.value = true }
 const handleEdit = (row) => { dialogTitle.value = '编辑公告'; viewMode.value = false; Object.assign(form, row); dialogVisible.value = true }
 const handleDetail = (row) => { dialogTitle.value = '查看公告'; viewMode.value = true; Object.assign(form, row); dialogVisible.value = true }
-const handleDelete = (row) => { api.post('/sys/notice/delete', { noticeId: row.noticeId }).then(() => { ElMessage.success('删除成功'); loadData() }) }
+const handleDelete = (row) => { api.post('/sys/notice/delete', { id: row.noticeId }).then(() => { ElMessage.success('删除成功'); loadData() }) }
 const handleSubmit = () => {
   const url = form.noticeId ? '/sys/notice/edit' : '/sys/notice/add'
   api.post(url, form).then(() => { ElMessage.success('操作成功'); dialogVisible.value = false; loadData() })

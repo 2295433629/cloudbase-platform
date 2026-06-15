@@ -8,7 +8,6 @@ import com.cloudbase.common.core.domain.TableDataInfo;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.module.system.entity.SysOperLog;
 import com.cloudbase.module.system.mapper.SysOperLogMapper;
-import com.cloudbase.module.system.model.dto.IdDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -46,6 +45,34 @@ public class SysOperLogController {
         }
         if (params.containsKey("operUserName")) {
             wrapper.like(SysOperLog::getOperUserName, params.get("operUserName"));
+        }
+        if (params.containsKey("operType") && params.get("operType") != null
+                && !params.get("operType").toString().isEmpty()) {
+            wrapper.eq(SysOperLog::getOperType, params.get("operType"));
+        }
+        if (params.containsKey("status") && params.get("status") != null) {
+            wrapper.eq(SysOperLog::getSuccess, Integer.parseInt(params.get("status").toString()));
+        }
+        wrapper.orderByDesc(SysOperLog::getOperTime);
+
+        Page<SysOperLog> page = operLogMapper.selectPage(new Page<>(pageNo, pageSize), wrapper);
+        return TableDataInfo.build(page.getRecords(), page.getTotal());
+    }
+
+    /**
+     * 查询最近操作日志（仪表盘用）
+     */
+    @Log(title = "操作日志管理", businessType = BusinessType.QUERY)
+    @PostMapping("/recent")
+    public TableDataInfo recent(@RequestBody Map<String, Object> params) {
+        int pageNo = params.containsKey("pageNo") ? Integer.parseInt(params.get("pageNo").toString()) : 1;
+        int pageSize = params.containsKey("pageSize") ? Integer.parseInt(params.get("pageSize").toString()) : 5;
+        pageNo = Math.max(pageNo, 1);
+        pageSize = Math.min(Math.max(pageSize, 1), 50);
+
+        LambdaQueryWrapper<SysOperLog> wrapper = new LambdaQueryWrapper<>();
+        if (params.containsKey("module")) {
+            wrapper.like(SysOperLog::getModule, params.get("module"));
         }
         wrapper.orderByDesc(SysOperLog::getOperTime);
 

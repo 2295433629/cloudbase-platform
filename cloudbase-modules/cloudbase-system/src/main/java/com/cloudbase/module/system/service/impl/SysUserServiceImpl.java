@@ -4,11 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloudbase.common.core.exception.BusinessException;
-import com.cloudbase.module.system.model.dto.UserQueryDTO;
 import com.cloudbase.module.system.entity.SysUser;
 import com.cloudbase.module.system.entity.SysUserRole;
 import com.cloudbase.module.system.mapper.SysUserMapper;
 import com.cloudbase.module.system.mapper.SysUserRoleMapper;
+import com.cloudbase.module.system.model.dto.UserQueryDTO;
 import com.cloudbase.module.system.service.ISysUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -87,6 +87,9 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (query.getRealName() != null && !query.getRealName().isEmpty()) {
             wrapper.like(SysUser::getRealName, query.getRealName());
         }
+        if (query.getStatus() != null) {
+            wrapper.eq(SysUser::getStatus, query.getStatus());
+        }
         wrapper.orderByDesc(SysUser::getCreateTime);
 
         int pageNo = Math.max(query.getPageNo() != null ? query.getPageNo() : 1, 1);
@@ -125,5 +128,18 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
                 sysUserRoleMapper.insert(ur);
             }
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void resetPassword(Long userId, String newPassword) {
+        SysUser existing = getById(userId);
+        if (existing == null) {
+            throw new BusinessException("用户不存在");
+        }
+        SysUser user = new SysUser();
+        user.setUserId(userId);
+        user.setPassword(LoginServiceImpl.sha256Hex(newPassword + existing.getAccount()));
+        updateById(user);
     }
 }

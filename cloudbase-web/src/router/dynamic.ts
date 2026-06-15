@@ -1,12 +1,17 @@
-import type { RouteRecordRaw } from 'vue-router'
-import type { SysMenu } from '@/types/system'
-import { getMenuTree } from '@/api/system'
+import type {RouteRecordRaw} from 'vue-router'
+import type {SysMenu} from '@/types/system'
+import {getMenuTree} from '@/api/system'
 
 /**
  * 使用 Vite import.meta.glob 预加载所有视图组件
  * key 如 './system/user/index.vue'，value 为懒加载函数
  */
 const viewModules = import.meta.glob('../views/**/*.vue')
+
+// 打印所有可用的视图组件路径，便于排查组件加载问题
+if (import.meta.env.DEV) {
+  console.log('[dynamic-route] 可用视图组件:', Object.keys(viewModules))
+}
 
 /**
  * 根据数据库 component 字段解析视图组件
@@ -51,6 +56,10 @@ function flattenMenuPages(menus: SysMenu[]): SysMenu[] {
  */
 export function generateRoutes(menus: SysMenu[]): RouteRecordRaw[] {
   const pages = flattenMenuPages(menus)
+
+  if (import.meta.env.DEV) {
+    console.log('[dynamic-route] 解析到菜单页面:', pages.map(p => `${p.path} → ${p.component}`))
+  }
 
   return pages.map(page => ({
     path: page.path,

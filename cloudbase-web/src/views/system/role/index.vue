@@ -27,21 +27,35 @@
       <template #header>
         <div class="card-header">
           <span>角色列表</span>
-          <el-button type="primary" size="small" @click="handleAdd">新增角色</el-button>
+          <div>
+            <el-button type="success" size="small" @click="handleExport" :disabled="tableData.length === 0">
+              <el-icon><Download /></el-icon>导出
+            </el-button>
+            <el-button type="primary" size="small" @click="handleAdd">
+              <el-icon><Plus /></el-icon>新增角色
+            </el-button>
+          </div>
         </div>
       </template>
-      <el-table :data="tableData" border stripe v-loading="loading">
-        <el-table-column prop="roleName" label="角色名称" width="150" />
-        <el-table-column prop="roleCode" label="角色编码" width="150" />
-        <el-table-column label="数据权限" width="120">
+      <el-table
+        :data="tableData"
+        border
+        stripe
+        v-loading="loading"
+        :header-cell-style="{ background: '#fafafa', color: '#303133', fontWeight: '600' }"
+      >
+        <el-table-column type="index" label="#" width="55" align="center" :index="(p) => (query.pageNo - 1) * query.pageSize + p + 1" />
+        <el-table-column prop="roleName" label="角色名称" min-width="130" show-overflow-tooltip />
+        <el-table-column prop="roleCode" label="角色编码" min-width="130" show-overflow-tooltip />
+        <el-table-column label="数据权限" width="140">
           <template #default="{ row }">
-            {{ dataScopeMap[row.dataScope] || '全部' }}
+            <el-tag size="small">{{ dataScopeMap[row.dataScope] || '全部' }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="sort" label="排序" width="80" />
-        <el-table-column label="状态" width="80">
+        <el-table-column prop="sort" label="排序" width="80" align="center" />
+        <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.status === 1 ? 'success' : 'danger'">
+            <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
               {{ row.status === 1 ? '启用' : '禁用' }}
             </el-tag>
           </template>
@@ -76,7 +90,7 @@
     </el-card>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑角色' : '新增角色'" width="500px">
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑角色' : '新增角色'" width="500px" destroy-on-close>
       <el-form :model="form" :rules="formRules" ref="formRef" label-width="90px">
         <el-form-item label="角色名称" prop="roleName">
           <el-input v-model="form.roleName" placeholder="请输入角色名称" />
@@ -111,24 +125,27 @@
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { getRolePage, addRole, editRole, deleteRole, updateRoleStatus } from '@/api/system'
-import { ElMessage } from 'element-plus'
+<script setup lang="ts">
+import {onMounted, reactive, ref} from 'vue'
+import {addRole, deleteRole, editRole, getRolePage, updateRoleStatus} from '@/api/system'
+import type {FormInstance, FormRules} from 'element-plus'
+import {ElMessage} from 'element-plus'
+import * as XLSX from 'xlsx'
+import {Download, Plus} from '@element-plus/icons-vue'
 
-const dataScopeMap = { 1: '全部', 2: '自定义', 3: '本部门', 4: '本部门及以下', 5: '仅本人' }
+const dataScopeMap: Record<number, string> = { 1: '全部', 2: '自定义', 3: '本部门', 4: '本部门及以下', 5: '仅本人' }
 
 const loading = ref(false)
-const tableData = ref([])
+const tableData = ref<any[]>([])
 const total = ref(0)
-const query = reactive({ roleName: '', roleCode: '', status: null, pageNo: 1, pageSize: 20 })
+const query = reactive({ roleName: '', roleCode: '', status: undefined as number | undefined, pageNo: 1, pageSize: 20 })
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const submitLoading = ref(false)
-const formRef = ref(null)
+const formRef = ref<FormInstance>()
 
 const form = reactive({
-  roleId: null,
+  roleId: undefined as number | undefined,
   roleName: '',
   roleCode: '',
   dataScope: 1,
@@ -137,7 +154,7 @@ const form = reactive({
   remark: ''
 })
 
-const formRules = {
+const formRules: FormRules = {
   roleName: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
   roleCode: [{ required: true, message: '请输入角色编码', trigger: 'blur' }]
 }
@@ -156,7 +173,7 @@ async function fetchData() {
 function resetQuery() {
   query.roleName = ''
   query.roleCode = ''
-  query.status = null
+  query.status = undefined
   query.pageNo = 1
   fetchData()
 }
@@ -167,7 +184,7 @@ function handleAdd() {
   dialogVisible.value = true
 }
 
-function handleEdit(row) {
+function handleEdit(row: any) {
   isEdit.value = true
   Object.assign(form, {
     roleId: row.roleId,
@@ -182,6 +199,7 @@ function handleEdit(row) {
 }
 
 async function submitForm() {
+  if (!formRef.value) return
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
 
@@ -201,17 +219,41 @@ async function submitForm() {
   }
 }
 
-async function handleStatus(row) {
+async function handleStatus(row: any) {
   const status = row.status === 1 ? 0 : 1
   await updateRoleStatus({ roleId: row.roleId, status })
   ElMessage.success('状态更新成功')
   fetchData()
 }
 
-async function handleDelete(row) {
-  await deleteRole({ roleId: row.roleId })
+async function handleDelete(row: any) {
+  await deleteRole({ id: row.roleId })
   ElMessage.success('删除成功')
   fetchData()
+}
+
+// 导出 Excel
+function handleExport() {
+  const exportData = tableData.value.map((row: any) => ({
+    '角色名称': row.roleName,
+    '角色编码': row.roleCode,
+    '数据权限': dataScopeMap[row.dataScope] || '全部',
+    '排序': row.sort,
+    '状态': row.status === 1 ? '启用' : '禁用',
+    '备注': row.remark || '',
+    '创建时间': row.createTime
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(exportData)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '角色列表')
+
+  ws['!cols'] = [
+    { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 8 }, { wch: 8 }, { wch: 30 }, { wch: 20 }
+  ]
+
+  XLSX.writeFile(wb, `角色列表_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`)
+  ElMessage.success('导出成功')
 }
 
 onMounted(() => { fetchData() })

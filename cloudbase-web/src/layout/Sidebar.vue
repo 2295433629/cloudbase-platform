@@ -40,7 +40,7 @@
     >
       <el-menu-item index="/dashboard">
         <el-icon><HomeFilled /></el-icon>
-        <span style="font-size: 20px; color: #409EFF;">ClaudeBase</span>
+        <template #title><span style="font-size: 20px; color: #409EFF; font-weight: bold;">CloudBase</span></template>
       </el-menu-item>
       <template v-for="menu in visibleMenus" :key="menu.menuId">
         <el-sub-menu v-if="menu.children && menu.children.length > 0" :index="String(menu.menuId)">
@@ -125,17 +125,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { resetDynamicRoutes } from '@/router'
-import { getMenuTree } from '@/api/system'
-import { getProfile, updateProfile, changePassword } from '@/api/auth'
-import { Expand, Fold, User, Lock, SwitchButton } from '@element-plus/icons-vue'
+import {computed, onMounted, reactive, ref} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {useUserStore} from '@/stores/user'
+import {resetDynamicRoutes} from '@/router'
+import {getMenuTree} from '@/api/system'
+import {changePassword, getProfile, updateProfile} from '@/api/auth'
 import * as icons from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import type { FormInstance, FormRules } from 'element-plus'
-import type { SysMenu } from '@/types/system'
+import {ArrowDown, Expand, Fold, Lock, SwitchButton, User} from '@element-plus/icons-vue'
+import type {FormInstance, FormRules} from 'element-plus'
+import {ElMessage} from 'element-plus'
+import type {SysMenu} from '@/types/system'
 
 const route = useRoute()
 const router = useRouter()
@@ -160,7 +160,7 @@ const visibleMenus = computed(() => filterEnabled(menuTree.value))
 
 function filterEnabled(menus: SysMenu[]): SysMenu[] {
   return menus
-    .filter(m => m.status === 1)
+    .filter(m => m.status === 1 && m.menuType !== 3)
     .map(m => ({
       ...m,
       children: m.children ? filterEnabled(m.children) : []
@@ -193,6 +193,7 @@ const profileLoading = ref(false)
 const profileForm = reactive({
   account: '', realName: '', phone: '', email: '', avatar: '', status: 1, lastLoginTime: ''
 })
+
 
 async function openProfile() {
   try {

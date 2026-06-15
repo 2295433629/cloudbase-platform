@@ -116,4 +116,19 @@ public class SysUserController {
         sysUserService.assignRoles(dto.getUserId(), dto.getRoleIds());
         return AjaxResult.success();
     }
+
+    /**
+     * 重置用户密码
+     */
+    @Log(title = "用户管理", businessType = BusinessType.UPDATE)
+    @PostMapping("/resetPwd")
+    public AjaxResult resetPwd(@RequestBody java.util.Map<String, Object> params) {
+        Long userId = Long.parseLong(params.get("userId").toString());
+        String newPassword = params.get("newPassword").toString();
+        if (newPassword == null || newPassword.length() < 6) {
+            return AjaxResult.error("密码长度不能少于6位");
+        }
+        sysUserService.resetPassword(userId, newPassword);
+        return AjaxResult.success();
+    }
 }

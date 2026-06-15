@@ -57,7 +57,7 @@ public class SysRoleController {
         SysRole role = new SysRole();
         role.setRoleName(dto.getRoleName());
         role.setRoleCode(dto.getRoleCode());
-        role.setSort(dto.getRoleSort());
+        role.setSort(dto.getSort() != null ? dto.getSort() : 0);
         role.setDataScope(dto.getDataScope());
         role.setStatus(dto.getStatus());
         role.setRemark(dto.getRemark());
@@ -75,7 +75,7 @@ public class SysRoleController {
         role.setRoleId(dto.getRoleId());
         role.setRoleName(dto.getRoleName());
         role.setRoleCode(dto.getRoleCode());
-        role.setSort(dto.getRoleSort());
+        role.setSort(dto.getSort() != null ? dto.getSort() : 0);
         role.setDataScope(dto.getDataScope());
         role.setStatus(dto.getStatus());
         role.setRemark(dto.getRemark());

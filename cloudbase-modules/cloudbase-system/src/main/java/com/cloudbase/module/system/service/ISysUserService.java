@@ -46,4 +46,9 @@ public interface ISysUserService extends IService<SysUser> {
      * 分配用户角色（全量替换）
      */
     void assignRoles(Long userId, List<Long> roleIds);
+
+    /**
+     * 重置用户密码
+     */
+    void resetPassword(Long userId, String newPassword);
 }

@@ -97,9 +97,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { getMenuTree, addMenu, editMenu, deleteMenu, updateMenuStatus } from '@/api/system'
-import { ElMessage } from 'element-plus'
+import {onMounted, reactive, ref} from 'vue'
+import {addMenu, deleteMenu, editMenu, getMenuTree, updateMenuStatus} from '@/api/system'
+import {ElMessage} from 'element-plus'
 
 const menuTypeMap = { 1: '目录', 2: '菜单', 3: '按钮' }
 
@@ -192,7 +192,7 @@ async function handleStatus(row) {
 }
 
 async function handleDelete(row) {
-  await deleteMenu({ menuId: row.menuId })
+  await deleteMenu({ id: row.menuId })
   ElMessage.success('删除成功')
   fetchData()
 }

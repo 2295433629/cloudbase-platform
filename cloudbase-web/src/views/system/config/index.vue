@@ -40,8 +40,8 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import { ElMessage } from 'element-plus'
+import {reactive, ref} from 'vue'
+import {ElMessage} from 'element-plus'
 import api from '@/api'
 
 const tableData = ref([])
@@ -61,7 +61,7 @@ loadData()
 
 const handleAdd = () => { dialogTitle.value = '新增参数'; Object.assign(form, { configId: null, configName: '', configKey: '', configValue: '', remark: '' }); dialogVisible.value = true }
 const handleEdit = (row) => { dialogTitle.value = '编辑参数'; Object.assign(form, row); dialogVisible.value = true }
-const handleDelete = (row) => { api.post('/sys/config/delete', { configId: row.configId }).then(() => { ElMessage.success('删除成功'); loadData() }) }
+const handleDelete = (row) => { api.post('/sys/config/delete', { id: row.configId }).then(() => { ElMessage.success('删除成功'); loadData() }) }
 const handleSubmit = () => {
   const url = form.configId ? '/sys/config/edit' : '/sys/config/add'
   api.post(url, form).then(() => { ElMessage.success('操作成功'); dialogVisible.value = false; loadData() })

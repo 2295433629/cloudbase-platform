@@ -9,6 +9,12 @@
         <el-form-item label="姓名">
           <el-input v-model="query.realName" placeholder="请输入姓名" clearable />
         </el-form-item>
+        <el-form-item label="状态">
+          <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
+            <el-option label="启用" :value="1" />
+            <el-option label="禁用" :value="0" />
+          </el-select>
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="fetchData">查询</el-button>
           <el-button @click="resetQuery">重置</el-button>
@@ -21,15 +27,40 @@
       <template #header>
         <div class="card-header">
           <span>用户列表</span>
-          <el-button type="primary" size="small" @click="handleAdd">新增用户</el-button>
+          <div>
+            <el-button type="success" size="small" @click="handleExport" :disabled="tableData.length === 0">
+              <el-icon><Download /></el-icon>导出
+            </el-button>
+            <el-button type="danger" size="small" @click="handleBatchDelete" :disabled="selectedRows.length === 0">
+              <el-icon><Delete /></el-icon>批量删除
+            </el-button>
+            <el-button type="primary" size="small" @click="handleAdd">
+              <el-icon><Plus /></el-icon>新增用户
+            </el-button>
+          </div>
         </div>
       </template>
-      <el-table :data="tableData" border stripe v-loading="loading">
-        <el-table-column prop="account" label="账号" width="120" />
+      <el-table
+        :data="tableData"
+        border
+        stripe
+        v-loading="loading"
+        @selection-change="handleSelectionChange"
+        row-key="userId"
+        :header-cell-style="{ background: '#fafafa', color: '#303133', fontWeight: '600' }"
+      >
+        <el-table-column type="selection" width="50" align="center" />
+        <el-table-column type="index" label="#" width="55" align="center" :index="(p) => (query.pageNo - 1) * query.pageSize + p + 1" />
+        <el-table-column prop="account" label="账号" width="120" show-overflow-tooltip />
         <el-table-column prop="realName" label="姓名" width="120" />
-        <el-table-column prop="phone" label="手机号" width="140" />
-        <el-table-column prop="email" label="邮箱" />
-        <el-table-column label="状态" width="80">
+        <el-table-column prop="phone" label="手机号" width="140" show-overflow-tooltip />
+        <el-table-column prop="email" label="邮箱" show-overflow-tooltip />
+        <el-table-column label="部门" width="120">
+          <template #default="{ row }">
+            <span>{{ row.deptName || '-' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'danger'">
               {{ row.status === 1 ? '启用' : '禁用' }}
@@ -37,13 +68,14 @@
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="180" />
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
             <el-button link type="primary" size="small" @click="handleAssignRole(row)">分配角色</el-button>
             <el-button link type="warning" size="small" @click="handleStatus(row)">
               {{ row.status === 1 ? '禁用' : '启用' }}
             </el-button>
+            <el-button link type="info" size="small" @click="handleResetPwd(row)">重置密码</el-button>
             <el-popconfirm title="确定删除该用户？" @confirm="handleDelete(row)">
               <template #reference>
                 <el-button link type="danger" size="small">删除</el-button>
@@ -66,7 +98,7 @@
     </el-card>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑用户' : '新增用户'" width="500px">
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑用户' : '新增用户'" width="500px" destroy-on-close>
       <el-form :model="form" :rules="formRules" ref="formRef" label-width="80px">
         <el-form-item label="账号" prop="account">
           <el-input v-model="form.account" :disabled="isEdit" placeholder="请输入账号" />
@@ -77,11 +109,21 @@
         <el-form-item label="姓名" prop="realName">
           <el-input v-model="form.realName" placeholder="请输入姓名" />
         </el-form-item>
-        <el-form-item label="手机号">
-          <el-input v-model="form.phone" placeholder="请输入手机号" />
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="form.phone" placeholder="请输入手机号" maxlength="11" />
         </el-form-item>
-        <el-form-item label="邮箱">
+        <el-form-item label="邮箱" prop="email">
           <el-input v-model="form.email" placeholder="请输入邮箱" />
+        </el-form-item>
+        <el-form-item label="部门">
+          <el-tree-select
+            v-model="form.deptId"
+            :data="deptTree"
+            :props="{ label: 'deptName', value: 'deptId', children: 'children' }"
+            check-strictly
+            placeholder="请选择部门"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="状态">
           <el-switch v-model="form.status" :active-value="1" :inactive-value="0" />
@@ -94,7 +136,7 @@
     </el-dialog>
 
     <!-- 分配角色弹窗 -->
-    <el-dialog v-model="roleDialogVisible" title="分配角色" width="480px">
+    <el-dialog v-model="roleDialogVisible" title="分配角色" width="480px" destroy-on-close>
       <div style="margin-bottom: 12px; color: #606266">
         用户：<b>{{ roleAssignUser.realName }}（{{ roleAssignUser.account }}）</b>
       </div>
@@ -104,54 +146,104 @@
           <span style="color:#999;font-size:12px;margin-left:4px">（{{ role.roleCode }}）</span>
         </el-checkbox>
       </el-checkbox-group>
-      <el-empty v-if="allRoles.length === 0" description="暂无可用角色，请先在角色管理中添加" :image-size="60" />
+      <el-empty v-if="allRoles.length === 0" description="暂无可用角色" :image-size="60" />
       <template #footer>
         <el-button @click="roleDialogVisible = false">取消</el-button>
         <el-button type="primary" @click="submitAssignRoles" :loading="roleSubmitLoading">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 重置密码弹窗 -->
+    <el-dialog v-model="resetPwdVisible" title="重置密码" width="420px" destroy-on-close>
+      <el-form label-width="80px">
+        <el-form-item label="用户">
+          <span>{{ resetPwdForm.realName }}（{{ resetPwdForm.account }}）</span>
+        </el-form-item>
+        <el-form-item label="新密码">
+          <el-input v-model="resetPwdForm.newPassword" type="password" show-password placeholder="请输入新密码" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="resetPwdVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitResetPwd" :loading="resetPwdLoading">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, onMounted } from 'vue'
+<script setup lang="ts">
+import {onMounted, reactive, ref} from 'vue'
 import {
-  getUserPage, addUser, editUser, deleteUser, updateUserStatus,
-  getUserRoles, assignUserRoles, getRoleList
+  addUser,
+  assignUserRoles,
+  deleteUser,
+  editUser,
+  getDeptTree,
+  getRoleList,
+  getUserPage,
+  getUserRoles,
+  resetUserPwd,
+  updateUserStatus
 } from '@/api/system'
-import { ElMessage } from 'element-plus'
+import type {FormInstance, FormRules} from 'element-plus'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import * as XLSX from 'xlsx'
+import {Delete, Download, Plus} from '@element-plus/icons-vue'
+import type {SysDept} from '@/types/system'
 
 const loading = ref(false)
-const tableData = ref([])
+const tableData = ref<any[]>([])
 const total = ref(0)
-const query = reactive({ account: '', realName: '', pageNo: 1, pageSize: 20 })
+const query = reactive({ account: '', realName: '', status: undefined as number | undefined, pageNo: 1, pageSize: 20 })
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const submitLoading = ref(false)
-const formRef = ref(null)
+const formRef = ref<FormInstance>()
+const selectedRows = ref<any[]>([])
+
+const deptTree = ref<SysDept[]>([])
 
 const form = reactive({
-  userId: null,
+  userId: undefined as number | undefined,
   account: '',
   password: '',
   realName: '',
   phone: '',
   email: '',
+  deptId: undefined,
   status: 1
 })
 
-const formRules = {
+const formRules: FormRules = {
   account: [{ required: true, message: '请输入账号', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
-  realName: [{ required: true, message: '请输入姓名', trigger: 'blur' }]
+  realName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
+  phone: [
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
+  ],
+  email: [
+    { type: 'email', message: '请输入有效的邮箱地址', trigger: 'blur' }
+  ]
 }
 
-// 分配角色相关
+// 分配角色
 const roleDialogVisible = ref(false)
 const roleSubmitLoading = ref(false)
-const roleAssignUser = reactive({ userId: null, account: '', realName: '' })
-const selectedRoleIds = ref([])
-const allRoles = ref([])
+const roleAssignUser = reactive({ userId: undefined as number | undefined, account: '', realName: '' })
+const selectedRoleIds = ref<number[]>([])
+const allRoles = ref<any[]>([])
+
+// 重置密码
+const resetPwdVisible = ref(false)
+const resetPwdLoading = ref(false)
+const resetPwdForm = reactive({ userId: undefined as number | undefined, account: '', realName: '', newPassword: '' })
+
+// 加载部门树
+async function loadDeptTree() {
+  try {
+    deptTree.value = await getDeptTree()
+  } catch { /* ignore */ }
+}
 
 async function fetchData() {
   loading.value = true
@@ -167,23 +259,29 @@ async function fetchData() {
 function resetQuery() {
   query.account = ''
   query.realName = ''
+  query.status = undefined
   query.pageNo = 1
   fetchData()
 }
 
+function handleSelectionChange(rows: any[]) {
+  selectedRows.value = rows
+}
+
 function handleAdd() {
   isEdit.value = false
-  Object.assign(form, { userId: null, account: '', password: '', realName: '', phone: '', email: '', status: 1 })
+  Object.assign(form, { userId: undefined, account: '', password: '', realName: '', phone: '', email: '', deptId: undefined, status: 1 })
   dialogVisible.value = true
 }
 
-function handleEdit(row) {
+function handleEdit(row: any) {
   isEdit.value = true
   Object.assign(form, row)
   dialogVisible.value = true
 }
 
 async function submitForm() {
+  if (!formRef.value) return
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
 
@@ -203,39 +301,79 @@ async function submitForm() {
   }
 }
 
-async function handleStatus(row) {
+async function handleStatus(row: any) {
   const status = row.status === 1 ? 0 : 1
   await updateUserStatus({ userId: row.userId, status })
   ElMessage.success('状态更新成功')
   fetchData()
 }
 
-async function handleDelete(row) {
-  await deleteUser({ userId: row.userId })
+async function handleDelete(row: any) {
+  await deleteUser({ id: row.userId })
   ElMessage.success('删除成功')
   fetchData()
 }
 
+// 批量删除
+async function handleBatchDelete() {
+  if (selectedRows.value.length === 0) return
+  try {
+    await ElMessageBox.confirm(`确定删除选中的 ${selectedRows.value.length} 个用户？`, '批量删除', {
+      type: 'warning'
+    })
+    // 逐个删除（实际项目中应有批量删除接口）
+    for (const row of selectedRows.value) {
+      await deleteUser({ id: row.userId })
+    }
+    ElMessage.success('批量删除成功')
+    fetchData()
+  } catch { /* cancelled */ }
+}
+
+// 导出 Excel
+function handleExport() {
+  const exportData = tableData.value.map((row: any) => ({
+    '账号': row.account,
+    '姓名': row.realName,
+    '手机号': row.phone,
+    '邮箱': row.email,
+    '部门': row.deptName || '-',
+    '状态': row.status === 1 ? '启用' : '禁用',
+    '创建时间': row.createTime
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(exportData)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '用户列表')
+
+  // 设置列宽
+  ws['!cols'] = [
+    { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 8 }, { wch: 20 }
+  ]
+
+  XLSX.writeFile(wb, `用户列表_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`)
+  ElMessage.success('导出成功')
+}
+
 // 分配角色
-async function handleAssignRole(row) {
+async function handleAssignRole(row: any) {
   roleAssignUser.userId = row.userId
   roleAssignUser.account = row.account
   roleAssignUser.realName = row.realName
 
-  // 并行加载所有启用角色 + 该用户已有角色
   const [rolesRes, userRolesRes] = await Promise.all([
     getRoleList(),
-    getUserRoles({ userId: row.userId })
+    getUserRoles({ id: row.userId })
   ])
   allRoles.value = rolesRes
-  selectedRoleIds.value = userRolesRes
+  selectedRoleIds.value = Array.isArray(userRolesRes) ? userRolesRes : []
   roleDialogVisible.value = true
 }
 
 async function submitAssignRoles() {
   roleSubmitLoading.value = true
   try {
-    await assignUserRoles({ userId: roleAssignUser.userId, roleIds: selectedRoleIds.value })
+    await assignUserRoles({ userId: roleAssignUser.userId!, roleIds: selectedRoleIds.value })
     ElMessage.success('角色分配成功')
     roleDialogVisible.value = false
   } finally {
@@ -243,7 +381,36 @@ async function submitAssignRoles() {
   }
 }
 
-onMounted(() => { fetchData() })
+// 重置密码
+function handleResetPwd(row: any) {
+  resetPwdForm.userId = row.userId
+  resetPwdForm.account = row.account
+  resetPwdForm.realName = row.realName
+  resetPwdForm.newPassword = ''
+  resetPwdVisible.value = true
+}
+
+async function submitResetPwd() {
+  if (!resetPwdForm.newPassword || resetPwdForm.newPassword.length < 6) {
+    ElMessage.warning('密码长度不能少于6位')
+    return
+  }
+  resetPwdLoading.value = true
+  try {
+    await resetUserPwd({ userId: resetPwdForm.userId!, newPassword: resetPwdForm.newPassword })
+    ElMessage.success('密码重置成功')
+    resetPwdVisible.value = false
+  } catch {
+    // ignore
+  } finally {
+    resetPwdLoading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchData()
+  loadDeptTree()
+})
 </script>
 
 <style scoped>

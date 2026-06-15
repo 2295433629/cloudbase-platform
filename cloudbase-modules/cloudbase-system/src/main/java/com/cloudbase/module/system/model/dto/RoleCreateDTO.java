@@ -17,7 +17,7 @@ public class RoleCreateDTO {
     private String roleCode;
 
     @NotNull(message = "排序不能为空")
-    private Integer roleSort;
+    private Integer sort;
 
     private Integer dataScope;
     private Integer status;

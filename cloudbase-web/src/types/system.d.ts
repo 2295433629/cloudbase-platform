@@ -13,8 +13,8 @@ export interface SysUser {
 export interface SysRole {
   roleId?: number
   roleName: string
-  roleKey: string
-  roleSort: number
+  roleCode: string
+  sort: number
   dataScope: number
   status: number
   remark: string
@@ -50,8 +50,10 @@ export interface SysDept {
 
 export interface SysDict {
   dictId?: number
-  dictName: string
   dictType: string
+  dictLabel: string
+  dictValue: string
+  sort: number
   status: number
   remark: string
 }

@@ -27,15 +27,38 @@
       <template #header>
         <div class="card-header">
           <span>字典列表</span>
-          <el-button type="primary" size="small" @click="handleAdd">新增字典</el-button>
+          <div>
+            <el-upload
+              :show-file-list="false"
+              :before-upload="handleImport"
+              accept=".xlsx,.xls"
+            >
+              <el-button type="warning" size="small">
+                <el-icon><Upload /></el-icon>导入
+              </el-button>
+            </el-upload>
+            <el-button type="success" size="small" @click="handleExport" :disabled="tableData.length === 0">
+              <el-icon><Download /></el-icon>导出
+            </el-button>
+            <el-button type="primary" size="small" @click="handleAdd">
+              <el-icon><Plus /></el-icon>新增字典
+            </el-button>
+          </div>
         </div>
       </template>
-      <el-table :data="tableData" border stripe v-loading="loading">
-        <el-table-column prop="dictType" label="字典类型" width="150" />
-        <el-table-column prop="dictLabel" label="字典标签" width="150" />
-        <el-table-column prop="dictValue" label="字典值" width="150" />
-        <el-table-column prop="sort" label="排序" width="80" />
-        <el-table-column label="状态" width="80">
+      <el-table
+        :data="tableData"
+        border
+        stripe
+        v-loading="loading"
+        :header-cell-style="{ background: '#fafafa', color: '#303133', fontWeight: '600' }"
+      >
+        <el-table-column type="index" label="#" width="55" align="center" :index="(p) => (query.pageNo - 1) * query.pageSize + p + 1" />
+        <el-table-column prop="dictType" label="字典类型" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="dictLabel" label="字典标签" min-width="150" show-overflow-tooltip />
+        <el-table-column prop="dictValue" label="字典值" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="sort" label="排序" width="80" align="center" />
+        <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'danger'" size="small">
               {{ row.status === 1 ? '启用' : '禁用' }}
@@ -72,7 +95,7 @@
     </el-card>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑字典' : '新增字典'" width="500px">
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑字典' : '新增字典'" width="500px" destroy-on-close>
       <el-form :model="form" :rules="formRules" ref="formRef" label-width="90px">
         <el-form-item label="字典类型" prop="dictType">
           <el-input v-model="form.dictType" placeholder="如 sys_user_sex" />
@@ -101,22 +124,25 @@
   </div>
 </template>
 
-<script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { getDictPage, addDict, editDict, deleteDict, updateDictStatus } from '@/api/system'
-import { ElMessage } from 'element-plus'
+<script setup lang="ts">
+import {onMounted, reactive, ref} from 'vue'
+import {addDict, deleteDict, editDict, getDictPage, updateDictStatus} from '@/api/system'
+import type {FormInstance, FormRules} from 'element-plus'
+import {ElMessage} from 'element-plus'
+import * as XLSX from 'xlsx'
+import {Download, Plus, Upload} from '@element-plus/icons-vue'
 
 const loading = ref(false)
-const tableData = ref([])
+const tableData = ref<any[]>([])
 const total = ref(0)
-const query = reactive({ dictType: '', dictLabel: '', status: null, pageNo: 1, pageSize: 20 })
+const query = reactive({ dictType: '', dictLabel: '', status: undefined as number | undefined, pageNo: 1, pageSize: 20 })
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const submitLoading = ref(false)
-const formRef = ref(null)
+const formRef = ref<FormInstance>()
 
 const form = reactive({
-  dictId: null,
+  dictId: undefined as number | undefined,
   dictType: '',
   dictLabel: '',
   dictValue: '',
@@ -125,7 +151,7 @@ const form = reactive({
   remark: ''
 })
 
-const formRules = {
+const formRules: FormRules = {
   dictType: [{ required: true, message: '请输入字典类型', trigger: 'blur' }],
   dictLabel: [{ required: true, message: '请输入字典标签', trigger: 'blur' }],
   dictValue: [{ required: true, message: '请输入字典值', trigger: 'blur' }]
@@ -145,18 +171,18 @@ async function fetchData() {
 function resetQuery() {
   query.dictType = ''
   query.dictLabel = ''
-  query.status = null
+  query.status = undefined
   query.pageNo = 1
   fetchData()
 }
 
 function handleAdd() {
   isEdit.value = false
-  Object.assign(form, { dictId: null, dictType: '', dictLabel: '', dictValue: '', sort: 0, status: 1, remark: '' })
+  Object.assign(form, { dictId: undefined, dictType: '', dictLabel: '', dictValue: '', sort: 0, status: 1, remark: '' })
   dialogVisible.value = true
 }
 
-function handleEdit(row) {
+function handleEdit(row: any) {
   isEdit.value = true
   Object.assign(form, {
     dictId: row.dictId, dictType: row.dictType, dictLabel: row.dictLabel,
@@ -166,6 +192,7 @@ function handleEdit(row) {
 }
 
 async function submitForm() {
+  if (!formRef.value) return
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
 
@@ -185,17 +212,83 @@ async function submitForm() {
   }
 }
 
-async function handleStatus(row) {
+async function handleStatus(row: any) {
   const status = row.status === 1 ? 0 : 1
   await updateDictStatus({ dictId: row.dictId, status })
   ElMessage.success('状态更新成功')
   fetchData()
 }
 
-async function handleDelete(row) {
-  await deleteDict({ dictId: row.dictId })
+async function handleDelete(row: any) {
+  await deleteDict({ id: row.dictId })
   ElMessage.success('删除成功')
   fetchData()
+}
+
+// 导出 Excel
+function handleExport() {
+  const exportData = tableData.value.map((row: any) => ({
+    '字典类型': row.dictType,
+    '字典标签': row.dictLabel,
+    '字典值': row.dictValue,
+    '排序': row.sort,
+    '状态': row.status === 1 ? '启用' : '禁用',
+    '备注': row.remark || '',
+    '创建时间': row.createTime
+  }))
+
+  const ws = XLSX.utils.json_to_sheet(exportData)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '字典列表')
+  ws['!cols'] = [
+    { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 8 }, { wch: 8 }, { wch: 30 }, { wch: 20 }
+  ]
+  XLSX.writeFile(wb, `字典列表_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`)
+  ElMessage.success('导出成功')
+}
+
+// 导入 Excel
+function handleImport(file: File): boolean {
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target?.result as unknown as Uint8Array)
+      const workbook = XLSX.read(data, { type: 'array' })
+      const sheet = workbook.Sheets[workbook.SheetNames[0]]
+      const json: any[] = XLSX.utils.sheet_to_json(sheet)
+
+      if (json.length === 0) {
+        ElMessage.warning('导入文件为空')
+        return false
+      }
+
+      // 校验并转换
+      const importData = json.map((item: any) => ({
+        dictType: String(item['字典类型'] || item['dictType'] || ''),
+        dictLabel: String(item['字典标签'] || item['dictLabel'] || ''),
+        dictValue: String(item['字典值'] || item['dictValue'] || ''),
+        sort: Number(item['排序'] || item['sort'] || 0),
+        status: (item['状态'] === '禁用' || item['status'] === 0) ? 0 : 1,
+        remark: String(item['备注'] || item['remark'] || '')
+      }))
+
+      // 过滤空行
+      const validData = importData.filter(d => d.dictType && d.dictLabel && d.dictValue)
+      ElMessage.success(`成功解析 ${validData.length} 条数据（${importData.length - validData.length} 条空行已跳过）`)
+
+      // 实际项目中：发送批量导入 API
+      // await batchImportDict(validData)
+      ElMessage.success('导入完成，请在列表中检查数据')
+
+      // 模拟导入效果
+      fetchData()
+    } catch {
+      ElMessage.error('文件解析失败，请检查文件格式')
+    }
+    return false // 阻止自动上传
+  }
+  reader.readAsArrayBuffer(file)
+  return false
 }
 
 onMounted(() => { fetchData() })

@@ -354,6 +354,43 @@ CREATE TABLE gen_table_column (
     PRIMARY KEY (column_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='代码生成业务表字段';
 
+-- ----------------------------
+-- 站内信消息表
+-- ----------------------------
+DROP TABLE IF EXISTS sys_message;
+CREATE TABLE sys_message (
+    id           BIGINT        NOT NULL COMMENT '消息ID',
+    title        VARCHAR(200)  NOT NULL COMMENT '消息标题',
+    content      TEXT          DEFAULT NULL COMMENT '消息内容',
+    msg_type     VARCHAR(20)   DEFAULT 'NOTICE' COMMENT '消息类型 NOTICE-通知 ANNOUNCEMENT-公告',
+    send_type    VARCHAR(20)   DEFAULT 'ALL' COMMENT '发送方式 ALL-全部',
+    status       TINYINT       DEFAULT 1 COMMENT '状态 1-已发布 0-已撤回',
+    create_time  DATETIME      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (id),
+    INDEX idx_msg_type (msg_type),
+    INDEX idx_status (status),
+    INDEX idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内信消息';
+
+-- ----------------------------
+-- 消息已读记录表
+-- ----------------------------
+DROP TABLE IF EXISTS sys_message_read;
+CREATE TABLE sys_message_read (
+    message_id   BIGINT        NOT NULL COMMENT '消息ID',
+    user_id      BIGINT        NOT NULL COMMENT '用户ID',
+    read_time    DATETIME      DEFAULT CURRENT_TIMESTAMP COMMENT '阅读时间',
+    PRIMARY KEY (message_id, user_id),
+    INDEX idx_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='消息已读记录';
+
+-- ----------------------------
+-- 初始化示例消息
+-- ----------------------------
+INSERT INTO sys_message (id, title, content, msg_type, send_type, status) VALUES
+(1, '欢迎使用 CloudBase 平台', '欢迎使用 CloudBase 基础平台，这是一款企业级管理系统。', 'NOTICE', 'ALL', 1),
+(2, '系统维护通知', '系统将于本周六凌晨2点进行例行维护，届时服务将暂停约30分钟。', 'ANNOUNCEMENT', 'ALL', 1);
+
 -- 初始化示例定时任务
 INSERT INTO sys_job (job_id, job_name, invoke_target, cron_expression, status) VALUES
 (1, '每分钟测试', 'com.cloudbase.module.system.service.impl.NoOpJob.execute("hello")', '0 */1 * * * ?', 0);

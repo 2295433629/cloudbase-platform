@@ -74,3 +74,28 @@ ALTER TABLE sys_job ADD INDEX idx_status (status);
 
 -- 将 admin 用户的 last_login_time 改为 NULL（未登录过）
 UPDATE sys_user SET last_login_time = NULL WHERE user_id = 1 AND last_login_time IS NOT NULL;
+
+-- ----------------------------
+-- 4. 新增站内信消息表
+-- ----------------------------
+CREATE TABLE IF NOT EXISTS sys_message (
+    id           BIGINT        NOT NULL COMMENT '消息ID',
+    title        VARCHAR(200)  NOT NULL COMMENT '消息标题',
+    content      TEXT          DEFAULT NULL COMMENT '消息内容',
+    msg_type     VARCHAR(20)   DEFAULT 'NOTICE' COMMENT '消息类型',
+    send_type    VARCHAR(20)   DEFAULT 'ALL' COMMENT '发送方式',
+    status       TINYINT       DEFAULT 1 COMMENT '状态 1-已发布 0-已撤回',
+    create_time  DATETIME      DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (id),
+    INDEX idx_msg_type (msg_type),
+    INDEX idx_status (status),
+    INDEX idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内信消息';
+
+CREATE TABLE IF NOT EXISTS sys_message_read (
+    message_id   BIGINT        NOT NULL COMMENT '消息ID',
+    user_id      BIGINT        NOT NULL COMMENT '用户ID',
+    read_time    DATETIME      DEFAULT CURRENT_TIMESTAMP COMMENT '阅读时间',
+    PRIMARY KEY (message_id, user_id),
+    INDEX idx_user_id (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='消息已读记录';

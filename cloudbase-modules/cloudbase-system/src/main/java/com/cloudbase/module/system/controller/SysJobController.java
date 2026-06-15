@@ -10,8 +10,8 @@ import com.cloudbase.module.system.entity.SysJob;
 import com.cloudbase.module.system.entity.SysJobLog;
 import com.cloudbase.module.system.mapper.SysJobLogMapper;
 import com.cloudbase.module.system.model.dto.IdDTO;
-import com.cloudbase.module.system.service.ISysJobService;
 import com.cloudbase.module.system.quartz.ScheduleManager;
+import com.cloudbase.module.system.service.ISysJobService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
@@ -48,7 +48,11 @@ public class SysJobController {
 
         Page<SysJob> page = sysJobService.page(
                 new Page<>(pageNo, pageSize),
-                new LambdaQueryWrapper<SysJob>().orderByDesc(SysJob::getCreateTime)
+                new LambdaQueryWrapper<SysJob>()
+                        .like(params.containsKey("jobName") && params.get("jobName") != null
+                                && !params.get("jobName").toString().isEmpty(),
+                                SysJob::getJobName, params.get("jobName"))
+                        .orderByDesc(SysJob::getCreateTime)
         );
         return TableDataInfo.build(page.getRecords(), page.getTotal());
     }

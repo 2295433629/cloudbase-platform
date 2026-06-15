@@ -13,4 +13,5 @@ public class UserQueryDTO extends BasePageQuery {
 
     private String account;
     private String realName;
+    private Integer status;
 }
