@@ -42,12 +42,10 @@
       </template>
       <el-table
         :data="tableData"
-        border
         stripe
         v-loading="loading"
         @selection-change="handleSelectionChange"
         row-key="userId"
-        :header-cell-style="{ background: '#fafafa', color: '#303133', fontWeight: '600' }"
       >
         <el-table-column type="selection" width="50" align="center" />
         <el-table-column type="index" label="#" width="55" align="center" :index="(p) => (query.pageNo - 1) * query.pageSize + p + 1" />

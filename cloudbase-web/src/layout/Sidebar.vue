@@ -34,8 +34,8 @@
       :collapse="collapse"
       :collapse-transition="true"
       router
-      background-color="#304156"
-      text-color="#bfcbd9"
+      background-color="#1e2a3a"
+      text-color="#a0b0c0"
       active-text-color="#409EFF"
     >
       <el-menu-item index="/dashboard">
@@ -274,7 +274,7 @@ async function savePassword() {
 
 <style scoped>
 .layout-aside {
-  background-color: #304156;
+  background-color: #1e2a3a;
   overflow: hidden;
   transition: width 0.3s;
   display: flex;
@@ -287,7 +287,7 @@ async function savePassword() {
   display: flex;
   align-items: center;
   padding: 0 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -296,9 +296,9 @@ async function savePassword() {
   align-items: center;
   gap: 10px;
   cursor: pointer;
-  padding: 6px 8px;
-  border-radius: 6px;
-  transition: background-color 0.3s;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
   width: 100%;
   overflow: hidden;
 }
@@ -306,15 +306,16 @@ async function savePassword() {
   background-color: rgba(255, 255, 255, 0.08);
 }
 .user-avatar {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #409EFF 0%, #66b1ff 100%);
+  background: linear-gradient(135deg, #409EFF 0%, #79bbff 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.3);
 }
 .user-name {
   font-size: 14px;
@@ -326,7 +327,7 @@ async function savePassword() {
 }
 .arrow-icon {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255, 255, 255, 0.4);
   flex-shrink: 0;
 }
 
@@ -335,6 +336,43 @@ async function savePassword() {
   border-right: none;
   flex: 1;
   overflow-y: auto;
+  background-color: transparent !important;
+  padding: 6px 0;
+}
+
+/* 菜单项悬停效果 */
+.layout-aside :deep(.el-menu-item:hover),
+.layout-aside :deep(.el-sub-menu__title:hover) {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* 菜单项激活状态：左侧高亮条 + 柔和背景 */
+.layout-aside :deep(.el-menu-item.is-active) {
+  background-color: rgba(64, 158, 255, 0.15) !important;
+  color: #409EFF !important;
+  position: relative;
+  font-weight: 500;
+}
+.layout-aside :deep(.el-menu-item.is-active::before) {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background-color: #409EFF;
+}
+
+/* 子菜单展开标题激活态 */
+.layout-aside :deep(.el-sub-menu.is-active > .el-sub-menu__title) {
+  color: #fff !important;
+}
+
+/* 菜单项图标大小 */
+.layout-aside :deep(.el-menu-item .el-icon),
+.layout-aside :deep(.el-sub-menu__title .el-icon) {
+  font-size: 18px;
 }
 
 /* 底部折叠按钮 */
@@ -345,15 +383,15 @@ async function savePassword() {
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  color: #bfcbd9;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: #8899aa;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
   flex-shrink: 0;
-  transition: all 0.3s;
+  transition: all 0.2s;
   white-space: nowrap;
   overflow: hidden;
 }
 .sidebar-toggle:hover {
   color: #fff;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(255, 255, 255, 0.04);
 }
 </style>

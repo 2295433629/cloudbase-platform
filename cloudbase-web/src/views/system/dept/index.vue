@@ -17,11 +17,9 @@
       <el-table
         :data="filteredData"
         row-key="deptId"
-        border
         default-expand-all
         v-loading="loading"
         :tree-props="{ children: 'children' }"
-        :header-cell-style="{ background: '#fafafa', color: '#303133', fontWeight: '600' }"
       >
         <el-table-column prop="deptName" label="部门名称" min-width="180" />
         <el-table-column prop="sort" label="排序" width="80" align="center" />

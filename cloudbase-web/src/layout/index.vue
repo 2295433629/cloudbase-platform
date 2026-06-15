@@ -148,9 +148,9 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   background: #fff;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 1px solid #f0f0f0;
   padding: 0 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
   overflow: hidden;
 }
 
@@ -173,6 +173,13 @@ onMounted(() => {
   height: 28px !important;
   line-height: 28px !important;
   font-size: 13px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.header-tabs :deep(.el-tabs__item.is-active) {
+  background-color: rgba(64, 158, 255, 0.08);
+  color: #409EFF;
 }
 
 .header-right {
@@ -186,19 +193,22 @@ onMounted(() => {
   cursor: pointer;
   color: #606266;
   transition: color 0.2s;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.header-action-icon:hover {
+  color: #409eff;
+  background-color: rgba(64, 158, 255, 0.06);
 }
 
 :root.dark .header-action-icon {
   color: #ccc;
 }
 
-.header-action-icon:hover {
-  color: #409eff;
-}
-
 .layout-main {
   background: #f0f2f5;
-  padding: 20px;
+  padding: 16px;
   flex: 1;
   overflow: auto;
 }

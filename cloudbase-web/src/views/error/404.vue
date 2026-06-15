@@ -43,16 +43,20 @@ function goBack(): void {
 
 .error-code {
   font-size: 120px;
-  font-weight: bold;
-  color: #909399;
+  font-weight: 800;
+  background: linear-gradient(135deg, #409EFF, #79bbff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
   letter-spacing: 10px;
   margin: 0;
 }
 
 .error-desc {
-  font-size: 28px;
-  color: #333;
-  margin: 20px 0 10px;
+  font-size: 24px;
+  color: #374151;
+  margin: 16px 0 8px;
+  font-weight: 600;
 }
 
 :root.dark .error-desc {
@@ -60,8 +64,8 @@ function goBack(): void {
 }
 
 .error-message {
-  font-size: 16px;
+  font-size: 15px;
   color: #909399;
-  margin-bottom: 30px;
+  margin-bottom: 32px;
 }
 </style>

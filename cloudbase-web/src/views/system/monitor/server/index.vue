@@ -46,7 +46,7 @@
 
     <el-card shadow="hover" style="margin-top:20px" v-if="info.disks">
       <template #header><span>💾 磁盘信息</span></template>
-      <el-table :data="info.disks" border>
+      <el-table :data="info.disks">
         <el-table-column prop="dirName" label="挂载点" />
         <el-table-column prop="typeName" label="类型" />
         <el-table-column prop="total" label="总空间" />
@@ -61,7 +61,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import {onMounted, ref} from 'vue'
 import api from '@/api'
 
 const info = ref({})

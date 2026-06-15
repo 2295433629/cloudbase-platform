@@ -5,7 +5,7 @@
       <el-button type="primary" @click="loadData">查询</el-button>
       <el-button @click="handleAdd">新增</el-button>
     </div>
-    <el-table :data="tableData" border>
+    <el-table :data="tableData">
       <el-table-column prop="configName" label="参数名称" width="180" />
       <el-table-column prop="configKey" label="键名" width="200" />
       <el-table-column prop="configValue" label="键值" show-overflow-tooltip />

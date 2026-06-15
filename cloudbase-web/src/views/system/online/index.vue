@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <el-table :data="tableData" border>
+    <el-table :data="tableData">
       <el-table-column prop="realName" label="用户名称" width="120" />
       <el-table-column prop="account" label="账号" width="120" />
       <el-table-column prop="ipAddress" label="IP地址" width="150" />
@@ -22,8 +22,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import {ref} from 'vue'
+import {ElMessage} from 'element-plus'
 import api from '@/api'
 
 const tableData = ref([])

@@ -4,7 +4,7 @@
       <el-input v-model="searchForm.tableName" placeholder="表名" style="width:250px" clearable />
       <el-button type="primary" @click="loadData">查询</el-button>
     </div>
-    <el-table :data="filteredTables" border @selection-change="handleSelect">
+    <el-table :data="filteredTables" @selection-change="handleSelect">
       <el-table-column type="selection" width="50" />
       <el-table-column prop="tableName" label="表名" width="200" />
       <el-table-column prop="tableComment" label="表注释" show-overflow-tooltip />
@@ -27,8 +27,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import {computed, onMounted, reactive, ref} from 'vue'
+import {ElMessage} from 'element-plus'
 import api from '@/api'
 
 const tables = ref([])

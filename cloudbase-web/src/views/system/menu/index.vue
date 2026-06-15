@@ -4,7 +4,7 @@
       <el-button type="primary" @click="handleAdd(null)">新增菜单</el-button>
     </div>
 
-    <el-table :data="treeData" row-key="menuId" border default-expand-all v-loading="loading"
+    <el-table :data="treeData" row-key="menuId" default-expand-all v-loading="loading"
               :tree-props="{ children: 'children' }">
       <el-table-column prop="menuName" label="菜单名称" min-width="150" />
       <el-table-column label="类型" width="80">

@@ -5,7 +5,7 @@
       <el-button type="primary" @click="loadData">查询</el-button>
       <el-button @click="handleAdd">新增</el-button>
     </div>
-    <el-table :data="tableData" border>
+    <el-table :data="tableData">
       <el-table-column prop="noticeTitle" label="标题" show-overflow-tooltip />
       <el-table-column label="类型" width="100">
         <template #default="{ row }"><el-tag :type="row.noticeType===1?'warning':'info'">{{ row.noticeType===1?'通知':'公告' }}</el-tag></template>

@@ -147,7 +147,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
   position: relative;
   overflow: hidden;
 }
@@ -163,35 +163,39 @@ onMounted(() => {
 .circle {
   position: absolute;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(64, 158, 255, 0.06);
 }
 
 .circle-1 {
-  width: 300px;
-  height: 300px;
-  top: -80px;
-  right: -60px;
+  width: 400px;
+  height: 400px;
+  top: -120px;
+  right: -80px;
+  background: rgba(64, 158, 255, 0.08);
 }
 
 .circle-2 {
-  width: 200px;
-  height: 200px;
-  bottom: -50px;
-  left: -40px;
+  width: 250px;
+  height: 250px;
+  bottom: -80px;
+  left: -60px;
+  background: rgba(103, 194, 58, 0.06);
 }
 
 .circle-3 {
-  width: 150px;
-  height: 150px;
-  top: 40%;
-  left: 10%;
+  width: 180px;
+  height: 180px;
+  top: 35%;
+  left: 8%;
+  background: rgba(230, 162, 60, 0.05);
 }
 
 .login-card {
   width: 420px;
-  padding: 10px;
+  padding: 16px 12px;
   z-index: 1;
-  border-radius: 12px;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3) !important;
 }
 
 :root.dark .login-card {
@@ -200,14 +204,15 @@ onMounted(() => {
 
 .login-header {
   text-align: center;
-  margin-bottom: 30px;
+  margin-bottom: 32px;
 }
 
 .login-title {
   margin: 0;
-  color: #303133;
+  color: #1f2937;
   font-size: 24px;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 :root.dark .login-title {
@@ -224,8 +229,8 @@ onMounted(() => {
   width: 100%;
   height: 40px;
   cursor: pointer;
-  border-radius: 4px;
-  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
 }
 
 .login-options {

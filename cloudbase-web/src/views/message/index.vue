@@ -28,7 +28,7 @@
     </el-card>
 
     <el-card class="table-card">
-      <el-table :data="tableData" border stripe v-loading="loading" highlight-current-row
+      <el-table :data="tableData" stripe v-loading="loading" highlight-current-row
                 @current-change="handleRowClick">
         <el-table-column type="index" label="#" width="50" :index="(p) => (p + 1) * 10" />
         <el-table-column label="未读" width="60">

@@ -118,7 +118,7 @@
           <template #header>
             <span style="font-weight: 600">最近操作记录</span>
           </template>
-          <el-table :data="recentLogs" border stripe v-loading="logsLoading" max-height="300">
+          <el-table :data="recentLogs" stripe v-loading="logsLoading" max-height="300">
             <el-table-column prop="module" label="模块" width="120" />
             <el-table-column prop="operator" label="操作人" width="100" />
             <el-table-column label="操作类型" width="100">
@@ -330,16 +330,17 @@ onBeforeUnmount(() => {
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 16px;
 }
 
 .stat-card {
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  overflow: hidden;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
 }
 
 .stat-content {
@@ -349,30 +350,32 @@ onBeforeUnmount(() => {
 }
 
 .stat-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 12px;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #fff;
+  flex-shrink: 0;
 }
 
 .stat-card-blue .stat-icon { background: linear-gradient(135deg, #409EFF, #79bbff); }
 .stat-card-green .stat-icon { background: linear-gradient(135deg, #67C23A, #95d475); }
-.stat-card-orange .stat-icon { background: linear-gradient(135deg, #E6A23C, #f3d19e); }
-.stat-card-red .stat-icon { background: linear-gradient(135deg, #f56c6c, #f9a7a7); }
+.stat-card-orange .stat-icon { background: linear-gradient(135deg, #E6A23C, #eebe77); }
+.stat-card-red .stat-icon { background: linear-gradient(135deg, #f56c6c, #fab6b6); }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 13px;
   color: #909399;
   margin-bottom: 4px;
 }
 
 .stat-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #303133;
+  font-size: 26px;
+  font-weight: 700;
+  color: #1f2937;
+  letter-spacing: -0.5px;
 }
 
 :root.dark .stat-value {
@@ -387,7 +390,7 @@ onBeforeUnmount(() => {
 .quick-links {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 12px;
 }
 
 .quick-link-item {
@@ -395,16 +398,18 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 16px;
-  border-radius: 8px;
+  padding: 14px 12px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s;
   color: #606266;
+  font-size: 13px;
 }
 
 .quick-link-item:hover {
-  background: #f0f2f5;
+  background: rgba(64, 158, 255, 0.06);
   color: #409eff;
+  transform: translateY(-1px);
 }
 
 :root.dark .quick-link-item:hover {

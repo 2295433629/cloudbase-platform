@@ -5,7 +5,7 @@
       <el-button type="primary" @click="loadData">查询</el-button>
       <el-button @click="handleAdd">新增</el-button>
     </div>
-    <el-table :data="tableData" border>
+    <el-table :data="tableData">
       <el-table-column prop="jobName" label="任务名称" width="150" />
       <el-table-column prop="jobGroup" label="任务组" width="100" />
       <el-table-column prop="invokeTarget" label="调用目标" show-overflow-tooltip />
@@ -44,7 +44,7 @@
 
     <el-card shadow="hover" style="margin-top:20px">
       <template #header><span>📋 执行日志</span><el-button size="small" type="danger" style="float:right" @click="handleClearLog">清空</el-button></template>
-      <el-table :data="logData" border size="small">
+      <el-table :data="logData" size="small">
         <el-table-column prop="jobName" label="任务名称" width="150" />
         <el-table-column label="状态" width="80"><template #default="{ row }"><el-tag :type="row.status===1?'success':'danger'">{{ row.status===1?'成功':'失败' }}</el-tag></template></el-table-column>
         <el-table-column prop="costTime" label="耗时(ms)" width="100" />
@@ -56,8 +56,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import {onMounted, reactive, ref} from 'vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import api from '@/api'
 
 const tableData = ref([])

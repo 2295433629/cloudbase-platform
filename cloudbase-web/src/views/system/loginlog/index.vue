@@ -36,10 +36,8 @@
       </template>
       <el-table
         :data="tableData"
-        border
         stripe
         v-loading="loading"
-        :header-cell-style="{ background: '#fafafa', color: '#303133', fontWeight: '600' }"
       >
         <el-table-column type="index" label="#" width="55" align="center" :index="(p) => (pageNo - 1) * 20 + p + 1" />
         <el-table-column prop="userName" label="用户名称" width="120" show-overflow-tooltip />
