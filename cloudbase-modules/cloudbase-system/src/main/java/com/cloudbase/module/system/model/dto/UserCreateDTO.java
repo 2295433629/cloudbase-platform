@@ -21,5 +21,6 @@ public class UserCreateDTO {
     private String phone;
     private String email;
     private Long deptId;
+    private Long postId;
     private Integer status;
 }

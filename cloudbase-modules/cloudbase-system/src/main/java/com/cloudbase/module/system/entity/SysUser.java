@@ -21,6 +21,9 @@ public class SysUser extends BaseEntity {
     /** 所属部门ID */
     private Long deptId;
 
+    /** 岗位ID */
+    private Long postId;
+
     /** 账号 */
     private String account;
 

@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 import type {PageParams, TableResponse} from '@/types/api'
-import type {SysDept, SysDict, SysMenu, SysRole, SysUser} from '@/types/system'
+import type {SysDept, SysDict, SysMenu, SysPost, SysRole, SysUser} from '@/types/system'
 
 // 用户管理
 export function getUserPage(data: PageParams & Partial<SysUser>): Promise<TableResponse<SysUser>> { return request({ url: '/sys/user/page', method: 'post', data }) }
@@ -57,6 +57,7 @@ export function getDashboardStats(): Promise<{
   menuCount: number
   dictCount: number
   deptCount: number
+  postCount: number
   noticeCount: number
   onlineUserCount: number
   operLogTodayCount: number
@@ -64,3 +65,11 @@ export function getDashboardStats(): Promise<{
 
 // 最近操作日志
 export function getRecentOperLogs(params: PageParams & { module?: string }): Promise<TableResponse<{ module: string; operator: string; operType: string; operTime: string }>> { return request({ url: '/sys/operLog/recent', method: 'post', data: params }) }
+
+// 岗位管理
+export function getPostPage(data: PageParams & Partial<SysPost>): Promise<TableResponse<SysPost>> { return request({ url: '/sys/post/page', method: 'post', data }) }
+export function getPostList(data?: Record<string, unknown>): Promise<SysPost[]> { return request({ url: '/sys/post/list', method: 'post', data }) }
+export function addPost(data: Partial<SysPost>): Promise<void> { return request({ url: '/sys/post/add', method: 'post', data }) }
+export function editPost(data: Partial<SysPost>): Promise<void> { return request({ url: '/sys/post/edit', method: 'post', data }) }
+export function deletePost(data: { id: number }): Promise<void> { return request({ url: '/sys/post/delete', method: 'post', data }) }
+export function updatePostStatus(data: { postId: number; status: number }): Promise<void> { return request({ url: '/sys/post/updateStatus', method: 'post', data }) }

@@ -58,6 +58,11 @@
             <span>{{ row.deptName || '-' }}</span>
           </template>
         </el-table-column>
+        <el-table-column label="岗位" width="120">
+          <template #default="{ row }">
+            <span>{{ row.postName || '-' }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'danger'">
@@ -123,6 +128,11 @@
             style="width: 100%"
           />
         </el-form-item>
+        <el-form-item label="岗位">
+          <el-select v-model="form.postId" placeholder="请选择岗位" clearable style="width: 100%">
+            <el-option v-for="post in postList" :key="post.postId" :label="post.postName" :value="post.postId" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="状态">
           <el-switch v-model="form.status" :active-value="1" :inactive-value="0" />
         </el-form-item>
@@ -177,6 +187,7 @@ import {
   deleteUser,
   editUser,
   getDeptTree,
+  getPostList,
   getRoleList,
   getUserPage,
   getUserRoles,
@@ -187,7 +198,7 @@ import type {FormInstance, FormRules} from 'element-plus'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import * as XLSX from 'xlsx'
 import {Delete, Download, Plus} from '@element-plus/icons-vue'
-import type {SysDept} from '@/types/system'
+import type {SysDept, SysPost} from '@/types/system'
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
@@ -200,6 +211,7 @@ const formRef = ref<FormInstance>()
 const selectedRows = ref<any[]>([])
 
 const deptTree = ref<SysDept[]>([])
+const postList = ref<SysPost[]>([])
 
 const form = reactive({
   userId: undefined as number | undefined,
@@ -209,6 +221,7 @@ const form = reactive({
   phone: '',
   email: '',
   deptId: undefined,
+  postId: undefined,
   status: 1
 })
 
@@ -243,6 +256,13 @@ async function loadDeptTree() {
   } catch { /* ignore */ }
 }
 
+// 加载岗位列表
+async function loadPostList() {
+  try {
+    postList.value = await getPostList()
+  } catch { /* ignore */ }
+}
+
 async function fetchData() {
   loading.value = true
   try {
@@ -268,7 +288,7 @@ function handleSelectionChange(rows: any[]) {
 
 function handleAdd() {
   isEdit.value = false
-  Object.assign(form, { userId: undefined, account: '', password: '', realName: '', phone: '', email: '', deptId: undefined, status: 1 })
+  Object.assign(form, { userId: undefined, account: '', password: '', realName: '', phone: '', email: '', deptId: undefined, postId: undefined, status: 1 })
   dialogVisible.value = true
 }
 
@@ -319,7 +339,6 @@ async function handleBatchDelete() {
     await ElMessageBox.confirm(`确定删除选中的 ${selectedRows.value.length} 个用户？`, '批量删除', {
       type: 'warning'
     })
-    // 逐个删除（实际项目中应有批量删除接口）
     for (const row of selectedRows.value) {
       await deleteUser({ id: row.userId })
     }
@@ -344,7 +363,6 @@ function handleExport() {
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, '用户列表')
 
-  // 设置列宽
   ws['!cols'] = [
     { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 25 }, { wch: 15 }, { wch: 8 }, { wch: 20 }
   ]
@@ -408,6 +426,7 @@ async function submitResetPwd() {
 onMounted(() => {
   fetchData()
   loadDeptTree()
+  loadPostList()
 })
 </script>
 

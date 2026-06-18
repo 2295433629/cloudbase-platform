@@ -5,6 +5,7 @@ export interface SysUser {
   phone: string
   email: string
   deptId?: number
+  postId?: number
   status: number
   avatar: string
   createTime?: string
@@ -56,4 +57,14 @@ export interface SysDict {
   sort: number
   status: number
   remark: string
+}
+
+export interface SysPost {
+  postId?: number
+  postCode: string
+  postName: string
+  sort: number
+  status: number
+  remark: string
+  createTime?: string
 }

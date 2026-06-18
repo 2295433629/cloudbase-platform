@@ -10,6 +10,7 @@ import com.cloudbase.module.system.mapper.SysDictMapper;
 import com.cloudbase.module.system.mapper.SysMenuMapper;
 import com.cloudbase.module.system.mapper.SysNoticeMapper;
 import com.cloudbase.module.system.mapper.SysOperLogMapper;
+import com.cloudbase.module.system.mapper.SysPostMapper;
 import com.cloudbase.module.system.mapper.SysRoleMapper;
 import com.cloudbase.module.system.mapper.SysUserMapper;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,7 @@ public class DashboardController {
     private final SysMenuMapper menuMapper;
     private final SysDictMapper dictMapper;
     private final SysDeptMapper deptMapper;
+    private final SysPostMapper postMapper;
     private final SysNoticeMapper noticeMapper;
     private final SysOperLogMapper operLogMapper;
 
@@ -52,6 +54,7 @@ public class DashboardController {
         data.put("menuCount", menuMapper.selectCount(null));
         data.put("dictCount", dictMapper.selectCount(null));
         data.put("deptCount", deptMapper.selectCount(null));
+        data.put("postCount", postMapper.selectCount(null));
         data.put("noticeCount", noticeMapper.selectCount(null));
         // 在线用户数暂用0占位（需结合在线用户管理模块）
         data.put("onlineUserCount", 0);

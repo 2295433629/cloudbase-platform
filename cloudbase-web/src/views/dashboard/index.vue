@@ -3,7 +3,7 @@
     <!-- 统计卡片 -->
     <el-row :gutter="20">
       <el-col :span="6">
-        <el-card class="stat-card stat-card-blue" shadow="hover" @click="goTo('/system/user')">
+        <el-card class="stat-card stat-card-blue" shadow="hover" @click="goTo('/org/user')">
           <div class="stat-content">
             <div class="stat-icon">
               <el-icon :size="36"><User /></el-icon>
@@ -16,7 +16,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card class="stat-card stat-card-green" shadow="hover" @click="goTo('/system/role')">
+        <el-card class="stat-card stat-card-green" shadow="hover" @click="goTo('/org/role')">
           <div class="stat-content">
             <div class="stat-icon">
               <el-icon :size="36"><UserFilled /></el-icon>
@@ -29,7 +29,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card class="stat-card stat-card-orange" shadow="hover" @click="goTo('/system/menu')">
+        <el-card class="stat-card stat-card-orange" shadow="hover" @click="goTo('/perm/menu')">
           <div class="stat-content">
             <div class="stat-icon">
               <el-icon :size="36"><Menu /></el-icon>
@@ -42,7 +42,7 @@
         </el-card>
       </el-col>
       <el-col :span="6">
-        <el-card class="stat-card stat-card-red" shadow="hover" @click="goTo('/system/dept')">
+        <el-card class="stat-card stat-card-red" shadow="hover" @click="goTo('/org/dept')">
           <div class="stat-content">
             <div class="stat-icon">
               <el-icon :size="36"><OfficeBuilding /></el-icon>
@@ -85,27 +85,27 @@
             <span style="font-weight: 600">快捷入口</span>
           </template>
           <div class="quick-links">
-            <div class="quick-link-item" @click="goTo('/system/user')">
+            <div class="quick-link-item" @click="goTo('/org/user')">
               <el-icon :size="24" color="#409EFF"><User /></el-icon>
               <span>用户管理</span>
             </div>
-            <div class="quick-link-item" @click="goTo('/system/role')">
+            <div class="quick-link-item" @click="goTo('/org/role')">
               <el-icon :size="24" color="#67C23A"><UserFilled /></el-icon>
               <span>角色管理</span>
             </div>
-            <div class="quick-link-item" @click="goTo('/system/menu')">
+            <div class="quick-link-item" @click="goTo('/perm/menu')">
               <el-icon :size="24" color="#E6A23C"><Menu /></el-icon>
               <span>菜单管理</span>
             </div>
-            <div class="quick-link-item" @click="goTo('/system/dict')">
+            <div class="quick-link-item" @click="goTo('/settings/dict')">
               <el-icon :size="24" color="#F56C6C"><Notebook /></el-icon>
-              <span>字典管理</span>
+              <span>数据字典</span>
             </div>
-            <div class="quick-link-item" @click="goTo('/system/monitor/server')">
+            <div class="quick-link-item" @click="goTo('/settings/server')">
               <el-icon :size="24" color="#909399"><Monitor /></el-icon>
-              <span>服务监控</span>
+              <span>服务状态</span>
             </div>
-            <div class="quick-link-item" @click="goTo('/system/operlog')">
+            <div class="quick-link-item" @click="goTo('/audit/operlog')">
               <el-icon :size="24" color="#606266"><Document /></el-icon>
               <span>操作日志</span>
             </div>
@@ -156,6 +156,7 @@ const stats = reactive({
   menuCount: 0,
   dictCount: 0,
   deptCount: 0,
+  postCount: 0,
   noticeCount: 0,
   onlineUserCount: 0,
   operLogTodayCount: 0

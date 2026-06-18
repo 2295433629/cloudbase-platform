@@ -53,6 +53,7 @@ public class SysUserController {
         user.setPhone(dto.getPhone());
         user.setEmail(dto.getEmail());
         user.setDeptId(dto.getDeptId());
+        user.setPostId(dto.getPostId());
         user.setStatus(dto.getStatus());
         sysUserService.createUser(user);
         return AjaxResult.success();
@@ -71,6 +72,7 @@ public class SysUserController {
         user.setPhone(dto.getPhone());
         user.setEmail(dto.getEmail());
         user.setDeptId(dto.getDeptId());
+        user.setPostId(dto.getPostId());
         user.setStatus(dto.getStatus());
         sysUserService.updateUser(user);
         return AjaxResult.success();

@@ -1,13 +1,10 @@
 <template>
-  <div class="role-container">
+  <div class="post-container">
     <!-- 搜索区 -->
     <el-card class="search-card">
       <el-form :model="query" inline>
-        <el-form-item label="角色名称">
-          <el-input v-model="query.roleName" placeholder="请输入角色名称" clearable />
-        </el-form-item>
-        <el-form-item label="角色编码">
-          <el-input v-model="query.roleCode" placeholder="请输入角色编码" clearable />
+        <el-form-item label="岗位名称">
+          <el-input v-model="query.postName" placeholder="请输入岗位名称" clearable />
         </el-form-item>
         <el-form-item label="状态">
           <el-select v-model="query.status" placeholder="全部" clearable style="width: 120px">
@@ -26,30 +23,18 @@
     <el-card class="table-card">
       <template #header>
         <div class="card-header">
-          <span>角色列表</span>
+          <span>岗位列表</span>
           <div>
-            <el-button type="success" size="small" @click="handleExport" :disabled="tableData.length === 0">
-              <el-icon><Download /></el-icon>导出
-            </el-button>
             <el-button type="primary" size="small" @click="handleAdd">
-              <el-icon><Plus /></el-icon>新增角色
+              <el-icon><Plus /></el-icon>新增岗位
             </el-button>
           </div>
         </div>
       </template>
-      <el-table
-        :data="tableData"
-        stripe
-        v-loading="loading"
-      >
+      <el-table :data="tableData" stripe v-loading="loading">
         <el-table-column type="index" label="#" width="55" align="center" :index="(p) => (query.pageNo - 1) * query.pageSize + p + 1" />
-        <el-table-column prop="roleName" label="角色名称" min-width="130" show-overflow-tooltip />
-        <el-table-column prop="roleCode" label="角色编码" min-width="130" show-overflow-tooltip />
-        <el-table-column label="数据权限" width="140">
-          <template #default="{ row }">
-            <el-tag size="small">{{ dataScopeMap[row.dataScope] || '全部' }}</el-tag>
-          </template>
-        </el-table-column>
+        <el-table-column prop="postCode" label="岗位编码" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="postName" label="岗位名称" min-width="150" show-overflow-tooltip />
         <el-table-column prop="sort" label="排序" width="80" align="center" />
         <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
@@ -66,7 +51,7 @@
             <el-button link type="warning" size="small" @click="handleStatus(row)">
               {{ row.status === 1 ? '禁用' : '启用' }}
             </el-button>
-            <el-popconfirm title="确定删除该角色？" @confirm="handleDelete(row)">
+            <el-popconfirm title="确定删除该岗位？" @confirm="handleDelete(row)">
               <template #reference>
                 <el-button link type="danger" size="small">删除</el-button>
               </template>
@@ -88,22 +73,13 @@
     </el-card>
 
     <!-- 新增/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑角色' : '新增角色'" width="500px" destroy-on-close>
+    <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑岗位' : '新增岗位'" width="500px" destroy-on-close>
       <el-form :model="form" :rules="formRules" ref="formRef" label-width="90px">
-        <el-form-item label="角色名称" prop="roleName">
-          <el-input v-model="form.roleName" placeholder="请输入角色名称" />
+        <el-form-item label="岗位编码" prop="postCode">
+          <el-input v-model="form.postCode" placeholder="如 DEV, PM, CEO" />
         </el-form-item>
-        <el-form-item label="角色编码" prop="roleCode">
-          <el-input v-model="form.roleCode" placeholder="请输入角色编码（如 admin）" />
-        </el-form-item>
-        <el-form-item label="数据权限">
-          <el-select v-model="form.dataScope" style="width: 100%">
-            <el-option label="全部数据权限" :value="1" />
-            <el-option label="自定义数据权限" :value="2" />
-            <el-option label="本部门数据权限" :value="3" />
-            <el-option label="本部门及以下" :value="4" />
-            <el-option label="仅本人权限" :value="5" />
-          </el-select>
+        <el-form-item label="岗位名称" prop="postName">
+          <el-input v-model="form.postName" placeholder="请输入岗位名称" />
         </el-form-item>
         <el-form-item label="排序">
           <el-input-number v-model="form.sort" :min="0" :max="999" />
@@ -125,42 +101,38 @@
 
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue'
-import {addRole, deleteRole, editRole, getRolePage, updateRoleStatus} from '@/api/system'
+import {addPost, deletePost, editPost, getPostPage, updatePostStatus} from '@/api/system'
 import type {FormInstance, FormRules} from 'element-plus'
 import {ElMessage} from 'element-plus'
-import * as XLSX from 'xlsx'
-import {Download, Plus} from '@element-plus/icons-vue'
-
-const dataScopeMap: Record<number, string> = { 1: '全部', 2: '自定义', 3: '本部门', 4: '本部门及以下', 5: '仅本人' }
+import {Plus} from '@element-plus/icons-vue'
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const total = ref(0)
-const query = reactive({ roleName: '', roleCode: '', status: undefined as number | undefined, pageNo: 1, pageSize: 20 })
+const query = reactive({ postName: '', status: undefined as number | undefined, pageNo: 1, pageSize: 20 })
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
 const form = reactive({
-  roleId: undefined as number | undefined,
-  roleName: '',
-  roleCode: '',
-  dataScope: 1,
+  postId: undefined as number | undefined,
+  postCode: '',
+  postName: '',
   sort: 0,
   status: 1,
   remark: ''
 })
 
 const formRules: FormRules = {
-  roleName: [{ required: true, message: '请输入角色名称', trigger: 'blur' }],
-  roleCode: [{ required: true, message: '请输入角色编码', trigger: 'blur' }]
+  postCode: [{ required: true, message: '请输入岗位编码', trigger: 'blur' }],
+  postName: [{ required: true, message: '请输入岗位名称', trigger: 'blur' }]
 }
 
 async function fetchData() {
   loading.value = true
   try {
-    const res = await getRolePage(query)
+    const res = await getPostPage(query)
     tableData.value = res.rows
     total.value = res.total
   } finally {
@@ -169,8 +141,7 @@ async function fetchData() {
 }
 
 function resetQuery() {
-  query.roleName = ''
-  query.roleCode = ''
+  query.postName = ''
   query.status = undefined
   query.pageNo = 1
   fetchData()
@@ -178,17 +149,16 @@ function resetQuery() {
 
 function handleAdd() {
   isEdit.value = false
-  Object.assign(form, { roleId: null, roleName: '', roleCode: '', dataScope: 1, sort: 0, status: 1, remark: '' })
+  Object.assign(form, { postId: undefined, postCode: '', postName: '', sort: 0, status: 1, remark: '' })
   dialogVisible.value = true
 }
 
 function handleEdit(row: any) {
   isEdit.value = true
   Object.assign(form, {
-    roleId: row.roleId,
-    roleName: row.roleName,
-    roleCode: row.roleCode,
-    dataScope: row.dataScope,
+    postId: row.postId,
+    postCode: row.postCode,
+    postName: row.postName,
     sort: row.sort,
     status: row.status,
     remark: row.remark || ''
@@ -204,10 +174,10 @@ async function submitForm() {
   submitLoading.value = true
   try {
     if (isEdit.value) {
-      await editRole(form)
+      await editPost(form)
       ElMessage.success('编辑成功')
     } else {
-      await addRole(form)
+      await addPost(form)
       ElMessage.success('新增成功')
     }
     dialogVisible.value = false
@@ -219,45 +189,21 @@ async function submitForm() {
 
 async function handleStatus(row: any) {
   const status = row.status === 1 ? 0 : 1
-  await updateRoleStatus({ roleId: row.roleId, status })
+  await updatePostStatus({ postId: row.postId, status })
   ElMessage.success('状态更新成功')
   fetchData()
 }
 
 async function handleDelete(row: any) {
-  await deleteRole({ id: row.roleId })
+  await deletePost({ id: row.postId })
   ElMessage.success('删除成功')
   fetchData()
-}
-
-// 导出 Excel
-function handleExport() {
-  const exportData = tableData.value.map((row: any) => ({
-    '角色名称': row.roleName,
-    '角色编码': row.roleCode,
-    '数据权限': dataScopeMap[row.dataScope] || '全部',
-    '排序': row.sort,
-    '状态': row.status === 1 ? '启用' : '禁用',
-    '备注': row.remark || '',
-    '创建时间': row.createTime
-  }))
-
-  const ws = XLSX.utils.json_to_sheet(exportData)
-  const wb = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(wb, ws, '角色列表')
-
-  ws['!cols'] = [
-    { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 8 }, { wch: 8 }, { wch: 30 }, { wch: 20 }
-  ]
-
-  XLSX.writeFile(wb, `角色列表_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`)
-  ElMessage.success('导出成功')
 }
 
 onMounted(() => { fetchData() })
 </script>
 
 <style scoped>
-.role-container { display: flex; flex-direction: column; gap: 16px; }
+.post-container { display: flex; flex-direction: column; gap: 16px; }
 .card-header { display: flex; justify-content: space-between; align-items: center; }
 </style>

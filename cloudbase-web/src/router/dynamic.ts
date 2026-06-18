@@ -4,7 +4,7 @@ import {getMenuTree} from '@/api/system'
 
 /**
  * 使用 Vite import.meta.glob 预加载所有视图组件
- * key 如 './system/user/index.vue'，value 为懒加载函数
+ * key 如 '../views/organization/user/index.vue'，value 为懒加载函数
  */
 const viewModules = import.meta.glob('../views/**/*.vue')
 
@@ -15,7 +15,7 @@ if (import.meta.env.DEV) {
 
 /**
  * 根据数据库 component 字段解析视图组件
- * 例如 'system/user/index' → '../views/system/user/index.vue'
+ * 例如 'organization/user/index' → '../views/organization/user/index.vue'
  */
 function loadComponent(componentPath: string): () => Promise<unknown> {
   const key = `../views/${componentPath}.vue`
