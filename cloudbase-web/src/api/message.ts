@@ -2,7 +2,7 @@ import request from '@/utils/request'
 import type {PageParams, TableResponse} from '@/types/api'
 
 export interface MessageItem {
-  id: number
+  id: number | string
   title: string
   content: string
   msgType: string
@@ -17,11 +17,11 @@ export function getMessagePage(data: PageParams & { type?: string }): Promise<Ta
   return request({ url: '/sys/message/page', method: 'post', data })
 }
 
-export function getMessageDetail(id: number): Promise<MessageItem> {
+export function getMessageDetail(id: number | string): Promise<MessageItem> {
   return request({ url: '/sys/message/detail', method: 'post', params: { id } })
 }
 
-export function markMessageRead(data: { messageId: number }): Promise<void> {
+export function markMessageRead(data: { messageId: number | string }): Promise<void> {
   return request({ url: '/sys/message/read', method: 'post', data })
 }
 

@@ -124,7 +124,7 @@
 
 <script setup lang="ts">
 import {onMounted, reactive, ref} from 'vue'
-import {addDict, deleteDict, editDict, getDictPage, updateDictStatus} from '@/api/system'
+import {addDict, batchImportDict, deleteDict, editDict, getDictPage, updateDictStatus} from '@/api/system'
 import type {FormInstance, FormRules} from 'element-plus'
 import {ElMessage} from 'element-plus'
 import * as XLSX from 'xlsx'
@@ -140,7 +140,7 @@ const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
 const form = reactive({
-  dictId: undefined as number | undefined,
+  dictId: undefined as number | string | undefined,
   dictType: '',
   dictLabel: '',
   dictValue: '',
@@ -248,7 +248,7 @@ function handleExport() {
 // 导入 Excel
 function handleImport(file: File): boolean {
   const reader = new FileReader()
-  reader.onload = (e) => {
+  reader.onload = async (e) => {
     try {
       const data = new Uint8Array(e.target?.result as unknown as Uint8Array)
       const workbook = XLSX.read(data, { type: 'array' })
@@ -257,7 +257,7 @@ function handleImport(file: File): boolean {
 
       if (json.length === 0) {
         ElMessage.warning('导入文件为空')
-        return false
+        return
       }
 
       // 校验并转换
@@ -272,18 +272,19 @@ function handleImport(file: File): boolean {
 
       // 过滤空行
       const validData = importData.filter(d => d.dictType && d.dictLabel && d.dictValue)
-      ElMessage.success(`成功解析 ${validData.length} 条数据（${importData.length - validData.length} 条空行已跳过）`)
+      if (validData.length === 0) {
+        ElMessage.warning('没有有效的数据行')
+        return
+      }
+      ElMessage.info(`解析到 ${validData.length} 条有效数据，正在导入...`)
 
-      // 实际项目中：发送批量导入 API
-      // await batchImportDict(validData)
-      ElMessage.success('导入完成，请在列表中检查数据')
-
-      // 模拟导入效果
+      // 调用后端批量导入接口
+      await batchImportDict(validData)
+      ElMessage.success(`成功导入 ${validData.length} 条数据`)
       fetchData()
     } catch {
-      ElMessage.error('文件解析失败，请检查文件格式')
+      ElMessage.error('导入失败，请检查文件格式')
     }
-    return false // 阻止自动上传
   }
   reader.readAsArrayBuffer(file)
   return false

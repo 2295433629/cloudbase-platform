@@ -1,18 +1,18 @@
 export interface SysUser {
-  userId?: number
+  userId?: number | string
   account: string
   realName: string
   phone: string
   email: string
-  deptId?: number
-  postId?: number
+  deptId?: number | string
+  postId?: number | string
   status: number
   avatar: string
   createTime?: string
 }
 
 export interface SysRole {
-  roleId?: number
+  roleId?: number | string
   roleName: string
   roleCode: string
   sort: number
@@ -23,8 +23,8 @@ export interface SysRole {
 }
 
 export interface SysMenu {
-  menuId?: number
-  parentId: number
+  menuId?: number | string
+  parentId: number | string
   menuName: string
   menuType: number
   path: string
@@ -38,8 +38,8 @@ export interface SysMenu {
 }
 
 export interface SysDept {
-  deptId?: number
-  parentId: number
+  deptId?: number | string
+  parentId: number | string
   deptName: string
   sort: number
   leader: string
@@ -50,7 +50,7 @@ export interface SysDept {
 }
 
 export interface SysDict {
-  dictId?: number
+  dictId?: number | string
   dictType: string
   dictLabel: string
   dictValue: string
@@ -60,7 +60,7 @@ export interface SysDict {
 }
 
 export interface SysPost {
-  postId?: number
+  postId?: number | string
   postCode: string
   postName: string
   sort: number

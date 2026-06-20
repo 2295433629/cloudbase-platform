@@ -1,8 +1,8 @@
 export interface UserInfo {
-  userId: number
+  userId: number | string
   account: string
   realName: string
-  deptId: number
+  deptId: number | string
   avatar: string
 }
 

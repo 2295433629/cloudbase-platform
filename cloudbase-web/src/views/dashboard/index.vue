@@ -120,7 +120,7 @@
           </template>
           <el-table :data="recentLogs" stripe v-loading="logsLoading" max-height="300">
             <el-table-column prop="module" label="模块" width="120" />
-            <el-table-column prop="operator" label="操作人" width="100" />
+            <el-table-column prop="operUserName" label="操作人" width="100" />
             <el-table-column label="操作类型" width="100">
               <template #default="{ row }">
                 <el-tag :type="getOperTypeTag(row.operType)" size="small">
@@ -140,7 +140,7 @@
 import {onBeforeUnmount, onMounted, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {useUserStore} from '@/stores/user'
-import {getDashboardStats, getRecentOperLogs} from '@/api/system'
+import {getDashboardStats, getDashboardTrend, getDashboardTypeDistribution, getRecentOperLogs} from '@/api/system'
 import * as echarts from 'echarts'
 import {Document, Menu, Monitor, Notebook, OfficeBuilding, User, UserFilled} from '@element-plus/icons-vue'
 
@@ -163,7 +163,7 @@ const stats = reactive({
 })
 
 // 最近操作日志
-const recentLogs = ref<Array<{ module: string; operator: string; operType: string; operTime: string }>>([])
+const recentLogs = ref<Array<{ module: string; operUserName: string; operType: string; operTime: string }>>([])
 const logsLoading = ref(false)
 
 async function fetchStats() {
@@ -185,6 +185,28 @@ async function fetchRecentLogs() {
   } finally {
     logsLoading.value = false
   }
+}
+
+// 图表真实数据
+let trendData = { dates: [] as string[], newUsers: [] as number[], operations: [] as number[] }
+let typeData: Array<{ name: string; value: number }> = []
+
+async function fetchTrendData() {
+  try {
+    trendData = await getDashboardTrend()
+  } catch {
+    trendData = { dates: getLast7Days(), newUsers: [], operations: [] }
+  }
+  updateTrendChart()
+}
+
+async function fetchTypeData() {
+  try {
+    typeData = await getDashboardTypeDistribution()
+  } catch {
+    typeData = []
+  }
+  updateTypeChart()
 }
 
 function getOperTypeTag(type: string) {
@@ -217,13 +239,17 @@ function updateTrendChart() {
   const textColor = isDark ? '#e0e0e0' : '#333'
   const lineColor = isDark ? '#333' : '#e8e8e8'
 
+  const dates = trendData.dates.length > 0 ? trendData.dates : getLast7Days()
+  const newUsers = trendData.newUsers.length > 0 ? trendData.newUsers : new Array(7).fill(0)
+  const operations = trendData.operations.length > 0 ? trendData.operations : new Array(7).fill(0)
+
   trendChart.setOption({
     tooltip: { trigger: 'axis' },
     legend: { data: ['新增用户', '操作次数'], textStyle: { color: textColor }, bottom: 0 },
     grid: { top: 40, right: 20, bottom: 40, left: 50 },
     xAxis: {
       type: 'category',
-      data: getLast7Days(),
+      data: dates,
       axisLine: { lineStyle: { color: lineColor } },
       axisLabel: { color: textColor }
     },
@@ -238,7 +264,7 @@ function updateTrendChart() {
         name: '新增用户',
         type: 'line',
         smooth: true,
-        data: [3, 5, 2, 8, 4, 6, 3],
+        data: newUsers,
         itemStyle: { color: '#409EFF' },
         areaStyle: { color: 'rgba(64,158,255,0.1)' }
       },
@@ -246,7 +272,7 @@ function updateTrendChart() {
         name: '操作次数',
         type: 'line',
         smooth: true,
-        data: [12, 18, 8, 25, 15, 20, 14],
+        data: operations,
         itemStyle: { color: '#67C23A' },
         areaStyle: { color: 'rgba(103,194,58,0.1)' }
       }
@@ -264,6 +290,25 @@ function updateTypeChart() {
   if (!typeChart) return
   const isDark = document.documentElement.classList.contains('dark')
   const textColor = isDark ? '#e0e0e0' : '#333'
+
+  const colorMap: Record<string, string> = {
+    '新增': '#409EFF', '编辑': '#E6A23C', '删除': '#F56C6C',
+    '查询': '#909399', '导出': '#67C23A', '授权': '#00BCD4', '其他': '#795548'
+  }
+
+  const chartData = typeData.length > 0
+    ? typeData.map(item => ({
+        value: item.value,
+        name: item.name,
+        itemStyle: { color: colorMap[item.name] || '#909399' }
+      }))
+    : [
+        { value: 0, name: '新增', itemStyle: { color: '#409EFF' } },
+        { value: 0, name: '编辑', itemStyle: { color: '#E6A23C' } },
+        { value: 0, name: '删除', itemStyle: { color: '#F56C6C' } },
+        { value: 0, name: '查询', itemStyle: { color: '#909399' } },
+        { value: 0, name: '导出', itemStyle: { color: '#67C23A' } }
+      ]
 
   typeChart.setOption({
     tooltip: { trigger: 'item' },
@@ -284,13 +329,7 @@ function updateTypeChart() {
         emphasis: {
           label: { show: true, fontSize: 16, fontWeight: 'bold', color: textColor }
         },
-        data: [
-          { value: 35, name: '新增', itemStyle: { color: '#409EFF' } },
-          { value: 28, name: '编辑', itemStyle: { color: '#E6A23C' } },
-          { value: 12, name: '删除', itemStyle: { color: '#F56C6C' } },
-          { value: 45, name: '查询', itemStyle: { color: '#909399' } },
-          { value: 8, name: '导出', itemStyle: { color: '#67C23A' } }
-        ]
+        data: chartData
       }
     ]
   })
@@ -315,8 +354,8 @@ function handleResize() {
 onMounted(() => {
   fetchStats()
   fetchRecentLogs()
-  initTrendChart()
-  initTypeChart()
+  fetchTrendData().then(() => initTrendChart())
+  fetchTypeData().then(() => initTypeChart())
   window.addEventListener('resize', handleResize)
 })
 

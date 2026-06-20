@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * 字典管理（重构后使用DTO+Service）
  */
@@ -103,5 +105,29 @@ public class SysDictController {
         Integer status = Integer.parseInt(params.get("status").toString());
         sysDictService.updateStatus(dictId, status);
         return AjaxResult.success();
+    }
+
+    /**
+     * 批量导入字典
+     */
+    @Log(title = "字典管理", businessType = BusinessType.INSERT)
+    @PostMapping("/batchImport")
+    public AjaxResult batchImport(@RequestBody List<SysDict> list) {
+        if (list == null || list.isEmpty()) {
+            return AjaxResult.error("导入数据为空");
+        }
+        int successCount = 0;
+        for (SysDict dict : list) {
+            if (dict.getDictType() == null || dict.getDictType().isEmpty()
+                    || dict.getDictLabel() == null || dict.getDictLabel().isEmpty()
+                    || dict.getDictValue() == null || dict.getDictValue().isEmpty()) {
+                continue;
+            }
+            if (dict.getSort() == null) dict.setSort(0);
+            if (dict.getStatus() == null) dict.setStatus(1);
+            sysDictService.createDict(dict);
+            successCount++;
+        }
+        return AjaxResult.success("成功导入 " + successCount + " 条数据");
     }
 }

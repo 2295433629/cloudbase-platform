@@ -55,12 +55,12 @@
         <el-table-column prop="email" label="邮箱" show-overflow-tooltip />
         <el-table-column label="部门" width="120">
           <template #default="{ row }">
-            <span>{{ row.deptName || '-' }}</span>
+            <span>{{ deptNameMap[row.deptId] || '-' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="岗位" width="120">
           <template #default="{ row }">
-            <span>{{ row.postName || '-' }}</span>
+            <span>{{ postNameMap[row.postId] || '-' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="状态" width="80" align="center">
@@ -213,15 +213,19 @@ const selectedRows = ref<any[]>([])
 const deptTree = ref<SysDept[]>([])
 const postList = ref<SysPost[]>([])
 
+// 部门/岗位 ID→Name 映射表
+const deptNameMap = ref<Record<number, string>>({})
+const postNameMap = ref<Record<number, string>>({})
+
 const form = reactive({
-  userId: undefined as number | undefined,
+  userId: undefined as number | string | undefined,
   account: '',
   password: '',
   realName: '',
   phone: '',
   email: '',
-  deptId: undefined,
-  postId: undefined,
+  deptId: undefined as number | string | undefined,
+  postId: undefined as number | string | undefined,
   status: 1
 })
 
@@ -240,19 +244,29 @@ const formRules: FormRules = {
 // 分配角色
 const roleDialogVisible = ref(false)
 const roleSubmitLoading = ref(false)
-const roleAssignUser = reactive({ userId: undefined as number | undefined, account: '', realName: '' })
-const selectedRoleIds = ref<number[]>([])
+const roleAssignUser = reactive({ userId: undefined as number | string | undefined, account: '', realName: '' })
+const selectedRoleIds = ref<(number | string)[]>([])
 const allRoles = ref<any[]>([])
 
 // 重置密码
 const resetPwdVisible = ref(false)
 const resetPwdLoading = ref(false)
-const resetPwdForm = reactive({ userId: undefined as number | undefined, account: '', realName: '', newPassword: '' })
+const resetPwdForm = reactive({ userId: undefined as number | string | undefined, account: '', realName: '', newPassword: '' })
 
 // 加载部门树
 async function loadDeptTree() {
   try {
     deptTree.value = await getDeptTree()
+    // 构建部门 ID→Name 映射（递归展平树）
+    const map: Record<number, string> = {}
+    const walk = (nodes: SysDept[]) => {
+      for (const n of nodes) {
+        if (n.deptId) map[n.deptId] = n.deptName
+        if (n.children?.length) walk(n.children)
+      }
+    }
+    walk(deptTree.value)
+    deptNameMap.value = map
   } catch { /* ignore */ }
 }
 
@@ -260,6 +274,11 @@ async function loadDeptTree() {
 async function loadPostList() {
   try {
     postList.value = await getPostList()
+    const map: Record<number, string> = {}
+    for (const p of postList.value) {
+      if (p.postId) map[p.postId] = p.postName
+    }
+    postNameMap.value = map
   } catch { /* ignore */ }
 }
 

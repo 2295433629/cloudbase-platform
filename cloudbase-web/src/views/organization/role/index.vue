@@ -109,7 +109,7 @@ const dialogVisible = ref(false)
 const isEdit = ref(false)
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
-const form = reactive({ roleId: undefined as number | undefined, roleName: '', roleCode: '', dataScope: 1, sort: 0, status: 1, remark: '' })
+const form = reactive({ roleId: undefined as number | string | undefined, roleName: '', roleCode: '', dataScope: 1, sort: 0, status: 1, remark: '' })
 const formRules: FormRules = { roleName: [{ required: true, message: '请输入角色名称', trigger: 'blur' }], roleCode: [{ required: true, message: '请输入角色编码', trigger: 'blur' }] }
 
 async function fetchData() { loading.value = true; try { const res = await getRolePage(query); tableData.value = res.rows; total.value = res.total } finally { loading.value = false } }

@@ -46,6 +46,9 @@ public class SysPostController {
         if (postName != null && !postName.isEmpty()) {
             wrapper.like(SysPost::getPostName, postName);
         }
+        if (params.get("status") != null) {
+            wrapper.eq(SysPost::getStatus, Integer.parseInt(params.get("status").toString()));
+        }
         wrapper.orderByAsc(SysPost::getSort);
 
         Page<SysPost> page = postService.page(new Page<>(pageNo, pageSize), wrapper);

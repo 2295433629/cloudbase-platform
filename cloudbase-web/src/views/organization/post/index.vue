@@ -116,7 +116,7 @@ const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 
 const form = reactive({
-  postId: undefined as number | undefined,
+  postId: undefined as number | string | undefined,
   postCode: '',
   postName: '',
   sort: 0,

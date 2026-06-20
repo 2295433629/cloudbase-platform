@@ -21,7 +21,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -64,5 +67,84 @@ public class DashboardController {
                 new LambdaQueryWrapper<SysOperLog>().ge(SysOperLog::getOperTime, todayStart));
         data.put("operLogTodayCount", todayCount);
         return AjaxResult.success(data);
+    }
+
+    /**
+     * 近7日操作趋势（每日新增用户数 + 操作次数）
+     */
+    @Log(title = "仪表盘", businessType = BusinessType.QUERY)
+    @PostMapping("/trend")
+    public AjaxResult trend() {
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.minusDays(6);
+        String startDateStr = startDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+        // 查询近7天每日操作数量
+        List<Map<String, Object>> operCounts = operLogMapper.countByDateRange(startDateStr);
+        // 查询近7天每日新增用户数量
+        List<Map<String, Object>> userCounts = userMapper.countNewUsersByDateRange(startDateStr);
+
+        // 构建日期→数量的映射
+        Map<String, Long> operMap = new LinkedHashMap<>();
+        for (Map<String, Object> row : operCounts) {
+            operMap.put(row.get("date").toString(), ((Number) row.get("count")).longValue());
+        }
+        Map<String, Long> userMap = new LinkedHashMap<>();
+        for (Map<String, Object> row : userCounts) {
+            userMap.put(row.get("date").toString(), ((Number) row.get("count")).longValue());
+        }
+
+        // 按近7天日期顺序填充（无数据的日期补0）
+        List<String> dates = new ArrayList<>();
+        List<Long> newUserList = new ArrayList<>();
+        List<Long> operList = new ArrayList<>();
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("M/d");
+        for (int i = 0; i < 7; i++) {
+            LocalDate d = startDate.plusDays(i);
+            String isoDate = d.format(DateTimeFormatter.ISO_LOCAL_DATE);
+            dates.add(d.format(fmt));
+            newUserList.add(userMap.getOrDefault(isoDate, 0L));
+            operList.add(operMap.getOrDefault(isoDate, 0L));
+        }
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("dates", dates);
+        data.put("newUsers", newUserList);
+        data.put("operations", operList);
+        return AjaxResult.success(data);
+    }
+
+    /**
+     * 操作类型分布（近30天）
+     */
+    @Log(title = "仪表盘", businessType = BusinessType.QUERY)
+    @PostMapping("/typeDistribution")
+    public AjaxResult typeDistribution() {
+        LocalDate startDate = LocalDate.now().minusDays(30);
+        String startDateStr = startDate.format(DateTimeFormatter.ISO_LOCAL_DATE);
+
+        List<Map<String, Object>> rows = operLogMapper.countByOperType(startDateStr);
+
+        // 操作类型名称映射
+        Map<String, String> typeNameMap = Map.of(
+                "INSERT", "新增",
+                "UPDATE", "编辑",
+                "DELETE", "删除",
+                "QUERY", "查询",
+                "EXPORT", "导出",
+                "GRANT", "授权",
+                "OTHER", "其他"
+        );
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Map<String, Object> row : rows) {
+            String type = row.get("type") != null ? row.get("type").toString() : "OTHER";
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("name", typeNameMap.getOrDefault(type, type));
+            item.put("value", ((Number) row.get("count")).longValue());
+            result.add(item);
+        }
+
+        return AjaxResult.success(result);
     }
 }

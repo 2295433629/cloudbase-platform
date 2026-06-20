@@ -105,8 +105,8 @@ const submitLoading = ref(false)
 const formRef = ref()
 
 const form = reactive({
-  deptId: undefined as number | undefined,
-  parentId: 0,
+  deptId: undefined as number | string | undefined,
+  parentId: 0 as number | string,
   deptName: '',
   sort: 0,
   leader: '',
