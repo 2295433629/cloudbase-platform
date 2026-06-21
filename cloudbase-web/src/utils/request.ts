@@ -24,7 +24,6 @@ function addPending(config: InternalAxiosRequestConfig): void {
 }
 
 function removePending(config: InternalAxiosRequestConfig): void {
-  // GET 请求不注册到 pendingMap，也不需要移除
   if (config.method?.toUpperCase() === 'GET') return
   const key = getRequestKey(config)
   if (pendingMap.has(key)) {
@@ -52,16 +51,21 @@ function getRouter() {
   return import('@/router').then(m => m.default)
 }
 
+/** 需要跳转登录页的认证错误码 */
+const AUTH_ERROR_CODES = new Set(['A0200', 'A0201', 'A0202'])
+
 // 响应拦截器
 request.interceptors.response.use(
   (response: AxiosResponse<ApiResponse | TableResponse>) => {
     removePending(response.config as InternalAxiosRequestConfig)
     const res = response.data
-    if (res.code === 200) {
+    // 成功：业务码 "00000"
+    if (res.code === '00000') {
       return 'rows' in res ? res : res.data
     }
+    // 业务错误（HTTP 200 但 code 非 "00000"，极少见）
     ElMessage.error(res.msg || '请求失败')
-    if (res.code === 401) {
+    if (AUTH_ERROR_CODES.has(res.code)) {
       localStorage.removeItem('token')
       getRouter().then(router => router.push('/login'))
     }
@@ -75,15 +79,22 @@ request.interceptors.response.use(
       console.log('请求已取消:', error.message)
       return Promise.reject(error)
     }
-    if (error.response && error.response.status === 401) {
-      ElMessage.error(error.response.data?.msg || '登录已过期，请重新登录')
+
+    const status = error.response?.status
+    const data = error.response?.data || {}
+
+    if (status === 401 || AUTH_ERROR_CODES.has(data?.code)) {
+      // 认证失败 → 跳转登录
+      ElMessage.error(data?.msg || '登录已过期，请重新登录')
       localStorage.removeItem('token')
       getRouter().then(router => router.push('/login'))
-    } else if (error.response && error.response.status === 403) {
-      ElMessage.error('权限不足')
+    } else if (status === 403 || data?.code === 'A0300' || data?.code === 'A0301') {
+      // 权限不足 → 跳转 403 页
+      ElMessage.error(data?.msg || '权限不足')
       getRouter().then(router => router.push('/403'))
     } else {
-      ElMessage.error(error.response?.data?.msg || '网络异常，请稍后重试')
+      // 其他错误（400/404/500 等）
+      ElMessage.error(data?.msg || '网络异常，请稍后重试')
     }
     return Promise.reject(error)
   }

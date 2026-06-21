@@ -103,7 +103,7 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     private void writeError(HttpServletResponse response, CommonExceptionEnum exceptionEnum) {
         response.setContentType("application/json;charset=UTF-8");
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setStatus(exceptionEnum.getHttpStatus());
         try (PrintWriter writer = response.getWriter()) {
             writer.write(JSON.toJSONString(
                     AjaxResult.error(exceptionEnum.getErrorCode(), exceptionEnum.getErrorMsg())
