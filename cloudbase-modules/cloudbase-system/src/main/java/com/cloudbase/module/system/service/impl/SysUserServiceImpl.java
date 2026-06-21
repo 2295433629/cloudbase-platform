@@ -3,7 +3,9 @@ package com.cloudbase.module.system.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloudbase.common.core.annotation.DataScope;
 import com.cloudbase.common.core.exception.BusinessException;
+import com.cloudbase.module.system.aspect.DataScopeHelper;
 import com.cloudbase.module.system.entity.SysUser;
 import com.cloudbase.module.system.entity.SysUserRole;
 import com.cloudbase.module.system.mapper.SysUserMapper;
@@ -79,6 +81,7 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
+    @DataScope
     public Page<SysUser> pageUsers(UserQueryDTO query) {
         LambdaQueryWrapper<SysUser> wrapper = new LambdaQueryWrapper<>();
         if (query.getAccount() != null && !query.getAccount().isEmpty()) {
@@ -90,6 +93,8 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
         if (query.getStatus() != null) {
             wrapper.eq(SysUser::getStatus, query.getStatus());
         }
+        // 应用数据权限过滤
+        DataScopeHelper.applyTo(wrapper);
         wrapper.orderByDesc(SysUser::getCreateTime);
 
         int pageNo = Math.max(query.getPageNo() != null ? query.getPageNo() : 1, 1);

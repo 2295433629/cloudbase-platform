@@ -1,5 +1,6 @@
 import {createRouter, createWebHistory, type RouteRecordRaw} from 'vue-router'
 import {fetchDynamicRoutes} from './dynamic'
+import {useUserStore} from '@/stores/user'
 
 /**
  * catch-all 通配路由（单独提取，便于动态路由加载后重新注册以确保最低优先级）
@@ -7,7 +8,7 @@ import {fetchDynamicRoutes} from './dynamic'
 const catchAllRoute: RouteRecordRaw = {
   path: '/:pathMatch(.*)*',
   name: 'NotFoundRedirect',
-  redirect: '/404',
+  component: () => import('@/views/error/404.vue'),
   meta: { title: '页面不存在' }
 }
 
@@ -93,6 +94,11 @@ router.beforeEach(async (to, _from, next) => {
   // 已登录且动态路由未加载 → 加载动态路由
   if (token && !dynamicRoutesLoaded) {
     try {
+      // 刷新页面时确保权限数据已加载
+      const userStore = useUserStore()
+      if (!userStore.permissions.length && !localStorage.getItem('permissions')) {
+        await userStore.fetchPermissions()
+      }
       const routes = await fetchDynamicRoutes()
       // 关键：先移除 catch-all 通配路由，避免它在 Vue Router 4.5+ 内部排序中
       // 优先于后添加的动态子路由被匹配到（这是 Vue Router 4 的已知行为）
@@ -111,6 +117,12 @@ router.beforeEach(async (to, _from, next) => {
       dynamicRoutesLoaded = true
       next('/403')
     }
+    return
+  }
+
+  // 动态路由已加载完毕，若当前仍命中 catch-all 说明页面不存在
+  if (dynamicRoutesLoaded && to.name === 'NotFoundRedirect') {
+    next({ path: '/404', replace: true })
     return
   }
 

@@ -129,7 +129,7 @@ import {computed, onMounted, reactive, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useUserStore} from '@/stores/user'
 import {resetDynamicRoutes} from '@/router'
-import {getMenuTree} from '@/api/system'
+import {getUserMenuTree} from '@/api/system'
 import {changePassword, getProfile, updateProfile} from '@/api/auth'
 import * as icons from '@element-plus/icons-vue'
 import {ArrowDown, Expand, Fold, Lock, SwitchButton, User} from '@element-plus/icons-vue'
@@ -150,7 +150,7 @@ const menuTree = ref<SysMenu[]>([])
 
 onMounted(async () => {
   try {
-    menuTree.value = await getMenuTree()
+    menuTree.value = await getUserMenuTree()
   } catch (e) {
     console.warn('加载菜单失败', e)
   }

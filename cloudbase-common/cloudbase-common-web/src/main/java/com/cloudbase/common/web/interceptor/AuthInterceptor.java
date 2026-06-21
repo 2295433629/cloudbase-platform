@@ -8,6 +8,7 @@ import com.cloudbase.common.web.annotation.ApiResource;
 import com.cloudbase.common.web.auth.JwtProperties;
 import com.cloudbase.common.web.auth.JwtTokenUtil;
 import com.cloudbase.common.web.auth.UserContext;
+import com.cloudbase.common.web.cache.CacheService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,9 +31,11 @@ import java.util.Map;
 public class AuthInterceptor implements HandlerInterceptor {
 
     private final JwtProperties jwtProperties;
+    private final CacheService cacheService;
 
-    public AuthInterceptor(JwtProperties jwtProperties) {
+    public AuthInterceptor(JwtProperties jwtProperties, CacheService cacheService) {
         this.jwtProperties = jwtProperties;
+        this.cacheService = cacheService;
     }
 
     @Override
@@ -61,6 +64,13 @@ public class AuthInterceptor implements HandlerInterceptor {
         }
 
         if (JwtTokenUtil.isTokenExpired(token, jwtProperties.getSecret())) {
+            writeError(response, CommonExceptionEnum.TOKEN_EXPIRED);
+            return false;
+        }
+
+        // 检查Token是否在缓存中存在（强制下线后缓存会被删除）
+        String cachedToken = cacheService.get("login_tokens:" + token);
+        if (cachedToken == null) {
             writeError(response, CommonExceptionEnum.TOKEN_EXPIRED);
             return false;
         }

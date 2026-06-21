@@ -4,6 +4,7 @@ import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.module.system.service.IGenService;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,13 +56,22 @@ public class GenController {
     }
 
     /**
-     * 生成代码
+     * 生成代码（返回 ZIP 二进制流）
      */
     @Log(title = "代码生成管理", businessType = BusinessType.OTHER)
     @PostMapping("/generate")
-    public AjaxResult generate(@RequestBody Map<String, Object> param) {
+    public void generate(@RequestBody Map<String, Object> param, HttpServletResponse response) {
         @SuppressWarnings("unchecked")
         List<String> tableNames = (List<String>) param.get("tableNames");
-        return AjaxResult.success(genService.generateCode(tableNames));
+        byte[] data = genService.generateCode(tableNames);
+        response.setContentType("application/zip");
+        response.setHeader("Content-Disposition", "attachment; filename=generated.zip");
+        response.setContentLength(data.length);
+        try {
+            response.getOutputStream().write(data);
+            response.getOutputStream().flush();
+        } catch (Exception e) {
+            throw new RuntimeException("写入ZIP文件失败", e);
+        }
     }
 }

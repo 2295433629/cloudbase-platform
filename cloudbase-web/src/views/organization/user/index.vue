@@ -184,6 +184,7 @@ import {onMounted, reactive, ref} from 'vue'
 import {
   addUser,
   assignUserRoles,
+  batchDeleteUsers,
   deleteUser,
   editUser,
   getDeptTree,
@@ -358,9 +359,8 @@ async function handleBatchDelete() {
     await ElMessageBox.confirm(`确定删除选中的 ${selectedRows.value.length} 个用户？`, '批量删除', {
       type: 'warning'
     })
-    for (const row of selectedRows.value) {
-      await deleteUser({ id: row.userId })
-    }
+    const ids = selectedRows.value.map(row => row.userId)
+    await batchDeleteUsers({ ids })
     ElMessage.success('批量删除成功')
     fetchData()
   } catch { /* cancelled */ }

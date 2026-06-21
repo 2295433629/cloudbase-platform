@@ -53,9 +53,10 @@
         </el-table-column>
         <el-table-column prop="remark" label="备注" show-overflow-tooltip />
         <el-table-column prop="createTime" label="创建时间" width="180" />
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+            <el-button link type="primary" size="small" @click="openPermDialog(row)">分配权限</el-button>
             <el-button link type="warning" size="small" @click="handleStatus(row)">
               {{ row.status === 1 ? '禁用' : '启用' }}
             </el-button>
@@ -89,13 +90,43 @@
         <el-button type="primary" @click="submitForm" :loading="submitLoading">确定</el-button>
       </template>
     </el-dialog>
+    <!-- 分配权限弹窗 -->
+    <el-dialog v-model="permDialogVisible" :title="`分配权限 - ${permRoleName}`" width="560px" destroy-on-close>
+      <div style="margin-bottom: 10px;">
+        <el-checkbox v-model="permExpandAll" @change="handleExpandAllChange">展开/折叠</el-checkbox>
+        <el-checkbox v-model="permCheckAll" @change="handleCheckAllChange">全选/取消</el-checkbox>
+      </div>
+      <el-tree
+        ref="permTreeRef"
+        :data="permMenuTree"
+        :props="{ label: 'menuName', children: 'children' }"
+        node-key="menuId"
+        show-checkbox
+        :default-expand-all="permExpandAll"
+        :check-strictly="false"
+        v-loading="permTreeLoading"
+      />
+      <template #footer>
+        <el-button @click="permDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitPermAssign" :loading="permSubmitLoading">确定</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue'
-import {addRole, deleteRole, editRole, getRolePage, updateRoleStatus} from '@/api/system'
-import type {FormInstance, FormRules} from 'element-plus'
+import {nextTick, onMounted, reactive, ref} from 'vue'
+import {
+  addRole,
+  assignRoleMenus,
+  deleteRole,
+  editRole,
+  getMenuTree,
+  getRoleMenuIds,
+  getRolePage,
+  updateRoleStatus
+} from '@/api/system'
+import type {ElTree, FormInstance, FormRules} from 'element-plus'
 import {ElMessage} from 'element-plus'
 import * as XLSX from 'xlsx'
 import {Download, Plus} from '@element-plus/icons-vue'
@@ -121,6 +152,106 @@ async function handleStatus(row: any) { const status = row.status === 1 ? 0 : 1;
 async function handleDelete(row: any) { await deleteRole({ id: row.roleId }); ElMessage.success('删除成功'); fetchData() }
 function handleExport() { const exportData = tableData.value.map((row: any) => ({ '角色名称': row.roleName, '角色编码': row.roleCode, '数据权限': dataScopeMap[row.dataScope] || '全部', '排序': row.sort, '状态': row.status === 1 ? '启用' : '禁用', '备注': row.remark || '', '创建时间': row.createTime })); const ws = XLSX.utils.json_to_sheet(exportData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '角色列表'); ws['!cols'] = [{ wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 8 }, { wch: 8 }, { wch: 30 }, { wch: 20 }]; XLSX.writeFile(wb, `角色列表_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`); ElMessage.success('导出成功') }
 onMounted(() => { fetchData() })
+
+// ==================== 分配权限 ====================
+const permDialogVisible = ref(false)
+const permTreeLoading = ref(false)
+const permSubmitLoading = ref(false)
+const permRoleName = ref('')
+const permRoleId = ref<number | string>('')
+const permMenuTree = ref<any[]>([])
+const permExpandAll = ref(false)
+const permCheckAll = ref(false)
+const permTreeRef = ref<InstanceType<typeof ElTree>>()
+
+async function openPermDialog(row: any) {
+  permRoleName.value = row.roleName
+  permRoleId.value = row.roleId
+  permExpandAll.value = false
+  permCheckAll.value = false
+  permDialogVisible.value = true
+  permTreeLoading.value = true
+  try {
+    // 并行加载全量菜单树和当前角色已分配菜单
+    const [tree, assignedIds] = await Promise.all([
+      getMenuTree(),
+      getRoleMenuIds({ roleId: row.roleId })
+    ])
+    permMenuTree.value = tree
+    // 仅勾选叶子节点（避免父节点被自动全勾）
+    const leafIds = getLeafMenuIds(tree, new Set(assignedIds.map(String)))
+    // 等 nextTick 确保树已渲染
+    await nextTick()
+    permTreeRef.value?.setCheckedKeys(leafIds as any)
+  } catch (e) {
+    console.error('加载权限树失败', e)
+  } finally {
+    permTreeLoading.value = false
+  }
+}
+
+/** 从菜单树中提取叶子节点的 ID（已分配的） */
+function getLeafMenuIds(tree: any[], assignedSet: Set<string>): (number | string)[] {
+  const leafIds: (number | string)[] = []
+  function walk(nodes: any[]) {
+    for (const node of nodes) {
+      if (node.children && node.children.length > 0) {
+        walk(node.children)
+      } else {
+        if (assignedSet.has(String(node.menuId))) {
+          leafIds.push(node.menuId)
+        }
+      }
+    }
+  }
+  walk(tree)
+  return leafIds
+}
+
+function handleExpandAllChange(val: boolean | string | number) {
+  permExpandAll.value = !!val
+  // 重新渲染树来切换展开状态
+  const tree = permMenuTree.value
+  permMenuTree.value = []
+  nextTick(() => { permMenuTree.value = tree })
+}
+
+function handleCheckAllChange(val: boolean | string | number) {
+  if (val) {
+    const allIds = getAllMenuIds(permMenuTree.value)
+    permTreeRef.value?.setCheckedKeys(allIds as any)
+  } else {
+    permTreeRef.value?.setCheckedKeys([])
+  }
+}
+
+function getAllMenuIds(tree: any[]): (number | string)[] {
+  const ids: (number | string)[] = []
+  function walk(nodes: any[]) {
+    for (const node of nodes) {
+      ids.push(node.menuId)
+      if (node.children) walk(node.children)
+    }
+  }
+  walk(tree)
+  return ids
+}
+
+async function submitPermAssign() {
+  if (!permTreeRef.value) return
+  permSubmitLoading.value = true
+  try {
+    // 获取全勾 + 半勾节点（半勾的是父菜单，也需要存入关联表）
+    const checkedIds = permTreeRef.value.getCheckedKeys(false) as (number | string)[]
+    const halfCheckedIds = permTreeRef.value.getHalfCheckedKeys() as (number | string)[]
+    const allIds = [...checkedIds, ...halfCheckedIds]
+    await assignRoleMenus({ roleId: permRoleId.value, menuIds: allIds })
+    ElMessage.success('权限分配成功')
+    permDialogVisible.value = false
+  } catch { /* request拦截器已处理 */ } finally {
+    permSubmitLoading.value = false
+  }
+}
 </script>
 
 <style scoped>

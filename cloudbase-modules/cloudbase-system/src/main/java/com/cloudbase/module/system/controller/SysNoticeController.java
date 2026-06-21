@@ -6,7 +6,9 @@ import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
 import com.cloudbase.common.core.domain.TableDataInfo;
 import com.cloudbase.common.enums.BusinessType;
+import com.cloudbase.module.system.entity.SysMessage;
 import com.cloudbase.module.system.entity.SysNotice;
+import com.cloudbase.module.system.mapper.SysMessageMapper;
 import com.cloudbase.module.system.mapper.SysNoticeMapper;
 import com.cloudbase.module.system.model.dto.IdDTO;
 import com.cloudbase.module.system.model.dto.NoticeCreateDTO;
@@ -31,6 +33,7 @@ import java.util.Map;
 public class SysNoticeController {
 
     private final SysNoticeMapper noticeMapper;
+    private final SysMessageMapper messageMapper;
 
     /**
      * 查询公告列表
@@ -74,6 +77,16 @@ public class SysNoticeController {
         notice.setNoticeContent(dto.getNoticeContent());
         notice.setStatus(dto.getStatus());
         noticeMapper.insert(notice);
+        // 若状态为发布，同步推送到站内信消息中心
+        if (notice.getStatus() != null && notice.getStatus() == 1) {
+            SysMessage msg = new SysMessage();
+            msg.setTitle(notice.getNoticeTitle());
+            msg.setContent(notice.getNoticeContent());
+            msg.setMsgType(notice.getNoticeType() == 1 ? "NOTICE" : "ANNOUNCEMENT");
+            msg.setSendType("ALL");
+            msg.setStatus(1);
+            messageMapper.insert(msg);
+        }
         return AjaxResult.success();
     }
 

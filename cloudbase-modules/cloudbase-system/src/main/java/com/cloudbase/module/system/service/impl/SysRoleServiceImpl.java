@@ -5,11 +5,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.cloudbase.common.core.exception.BusinessException;
 import com.cloudbase.module.system.entity.SysRole;
+import com.cloudbase.module.system.entity.SysRoleMenu;
 import com.cloudbase.module.system.mapper.SysRoleMapper;
+import com.cloudbase.module.system.mapper.SysRoleMenuMapper;
 import com.cloudbase.module.system.model.dto.RoleQueryDTO;
 import com.cloudbase.module.system.service.ISysRoleService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -18,7 +22,10 @@ import java.util.List;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> implements ISysRoleService {
+
+    private final SysRoleMenuMapper roleMenuMapper;
 
     @Override
     public void createRole(SysRole role) {
@@ -43,7 +50,10 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void deleteRole(Long roleId) {
+        // 级联删除角色-菜单关联
+        roleMenuMapper.deleteByRoleId(roleId);
         removeById(roleId);
     }
 
@@ -80,5 +90,41 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         role.setRoleId(roleId);
         role.setStatus(status);
         updateById(role);
+    }
+
+    @Override
+    public List<Long> getRoleMenuIds(Long roleId) {
+        return roleMenuMapper.selectMenuIdsByRoleId(roleId);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void assignRoleMenus(Long roleId, List<Long> menuIds) {
+        // 先删除旧关联
+        roleMenuMapper.deleteByRoleId(roleId);
+        // 逐条插入新关联
+        if (menuIds != null && !menuIds.isEmpty()) {
+            for (Long menuId : menuIds) {
+                SysRoleMenu rm = new SysRoleMenu();
+                rm.setRoleId(roleId);
+                rm.setMenuId(menuId);
+                roleMenuMapper.insert(rm);
+            }
+        }
+    }
+
+    @Override
+    public List<String> getUserPermissions(Long userId) {
+        // 检查是否超级管理员（userId=1）
+        if (userId != null && userId == 1L) {
+            return List.of("*:*:*");
+        }
+        List<String> perms = roleMenuMapper.selectPermsByUserId(userId);
+        return perms != null ? perms : List.of();
+    }
+
+    @Override
+    public List<String> getUserRoleCodes(Long userId) {
+        return roleMenuMapper.selectRoleCodesByUserId(userId);
     }
 }

@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { LoginParams, LoginResult, UserInfo } from '@/types/user'
+import type {LoginParams, LoginResult, UserInfo} from '@/types/user'
 
 export function loginApi(data: LoginParams): Promise<LoginResult> {
   return request({ url: '/auth/login', method: 'post', data })
@@ -24,4 +24,9 @@ export function updateProfile(data: Partial<UserInfo & { phone: string; email: s
 
 export function changePassword(data: { oldPassword: string; newPassword: string }): Promise<void> {
   return request({ url: '/auth/changePassword', method: 'post', data })
+}
+
+// 获取当前用户权限信息
+export function getPermissions(): Promise<{ permissions: string[]; roleCodes: string[] }> {
+  return request({ url: '/auth/permissions', method: 'post' })
 }

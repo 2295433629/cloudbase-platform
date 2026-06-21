@@ -89,6 +89,27 @@ public class SysUserController {
     }
 
     /**
+     * 批量删除用户
+     */
+    @Log(title = "用户管理", businessType = BusinessType.DELETE)
+    @PostMapping("/batchDelete")
+    public AjaxResult batchDelete(@RequestBody java.util.Map<String, Object> params) {
+        @SuppressWarnings("unchecked")
+        java.util.List<Object> ids = (java.util.List<Object>) params.get("ids");
+        if (ids == null || ids.isEmpty()) {
+            return AjaxResult.error("请选择要删除的用户");
+        }
+        int successCount = 0;
+        for (Object id : ids) {
+            try {
+                sysUserService.deleteUser(Long.parseLong(id.toString()));
+                successCount++;
+            } catch (Exception ignored) {}
+        }
+        return AjaxResult.success("成功删除 " + successCount + " 个用户");
+    }
+
+    /**
      * 修改用户状态
      */
     @Log(title = "用户管理", businessType = BusinessType.UPDATE)

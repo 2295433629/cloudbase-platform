@@ -7,6 +7,7 @@ export function getUserPage(data: PageParams & Partial<SysUser>): Promise<TableR
 export function addUser(data: Partial<SysUser>): Promise<void> { return request({ url: '/sys/user/add', method: 'post', data }) }
 export function editUser(data: Partial<SysUser>): Promise<void> { return request({ url: '/sys/user/edit', method: 'post', data }) }
 export function deleteUser(data: { id: number | string }): Promise<void> { return request({ url: '/sys/user/delete', method: 'post', data }) }
+export function batchDeleteUsers(data: { ids: (number | string)[] }): Promise<string> { return request({ url: '/sys/user/batchDelete', method: 'post', data }) }
 export function updateUserStatus(data: { userId: number | string; status: number }): Promise<void> { return request({ url: '/sys/user/updateStatus', method: 'post', data }) }
 export function getUserRoles(data: { id: number | string }): Promise<(number | string)[]> { return request({ url: '/sys/user/roles', method: 'post', data }) }
 export function assignUserRoles(data: { userId: number | string; roleIds: (number | string)[] }): Promise<void> { return request({ url: '/sys/user/assignRoles', method: 'post', data }) }
@@ -19,9 +20,12 @@ export function addRole(data: Partial<SysRole>): Promise<void> { return request(
 export function editRole(data: Partial<SysRole>): Promise<void> { return request({ url: '/sys/role/edit', method: 'post', data }) }
 export function deleteRole(data: { id: number | string }): Promise<void> { return request({ url: '/sys/role/delete', method: 'post', data }) }
 export function updateRoleStatus(data: { roleId: number | string; status: number }): Promise<void> { return request({ url: '/sys/role/updateStatus', method: 'post', data }) }
+export function getRoleMenuIds(data: { roleId: number | string }): Promise<(number | string)[]> { return request({ url: '/sys/role/menus', method: 'post', data }) }
+export function assignRoleMenus(data: { roleId: number | string; menuIds: (number | string)[] }): Promise<void> { return request({ url: '/sys/role/assignMenus', method: 'post', data }) }
 
 // 菜单管理
 export function getMenuTree(data?: Record<string, unknown>): Promise<SysMenu[]> { return request({ url: '/sys/menu/tree', method: 'post', data }) }
+export function getUserMenuTree(): Promise<SysMenu[]> { return request({ url: '/sys/menu/userTree', method: 'post' }) }
 export function addMenu(data: Partial<SysMenu>): Promise<void> { return request({ url: '/sys/menu/add', method: 'post', data }) }
 export function editMenu(data: Partial<SysMenu>): Promise<void> { return request({ url: '/sys/menu/edit', method: 'post', data }) }
 export function deleteMenu(data: { id: number | string }): Promise<void> { return request({ url: '/sys/menu/delete', method: 'post', data }) }

@@ -43,6 +43,9 @@ public class SysLoginLogController {
         if (params.containsKey("userName")) {
             wrapper.like(SysLoginLog::getUserName, params.get("userName"));
         }
+        if (params.containsKey("status") && params.get("status") != null) {
+            wrapper.eq(SysLoginLog::getStatus, Integer.parseInt(params.get("status").toString()));
+        }
         wrapper.orderByDesc(SysLoginLog::getLoginTime);
 
         Page<SysLoginLog> page = loginLogMapper.selectPage(new Page<>(pageNo, pageSize), wrapper);

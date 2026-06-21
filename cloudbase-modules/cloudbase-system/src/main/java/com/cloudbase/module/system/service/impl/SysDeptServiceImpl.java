@@ -2,7 +2,9 @@ package com.cloudbase.module.system.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.cloudbase.common.core.annotation.DataScope;
 import com.cloudbase.common.core.exception.BusinessException;
+import com.cloudbase.module.system.aspect.DataScopeHelper;
 import com.cloudbase.module.system.entity.SysDept;
 import com.cloudbase.module.system.mapper.SysDeptMapper;
 import com.cloudbase.module.system.service.ISysDeptService;
@@ -20,8 +22,12 @@ import java.util.stream.Collectors;
 public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> implements ISysDeptService {
 
     @Override
+    @DataScope
     public List<SysDept> getDeptTree() {
-        List<SysDept> allDepts = list();
+        LambdaQueryWrapper<SysDept> wrapper = new LambdaQueryWrapper<>();
+        // 应用数据权限过滤
+        DataScopeHelper.applyTo(wrapper);
+        List<SysDept> allDepts = list(wrapper);
         // 找根节点(parentId=0或null)
         List<SysDept> roots = allDepts.stream()
                 .filter(d -> d.getParentId() == null || d.getParentId() == 0)
@@ -36,7 +42,8 @@ public class SysDeptServiceImpl extends ServiceImpl<SysDeptMapper, SysDept> impl
         if (dept.getParentId() != null && dept.getParentId() != 0) {
             SysDept parent = getById(dept.getParentId());
             if (parent != null) {
-                dept.setAncestors(parent.getAncestors() + "," + dept.getParentId());
+                String parentAncestors = parent.getAncestors() != null ? parent.getAncestors() : "0";
+                dept.setAncestors(parentAncestors + "," + dept.getParentId());
             }
         } else {
             dept.setAncestors("0");

@@ -3,6 +3,7 @@ package com.cloudbase.module.system.controller;
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
 import com.cloudbase.common.enums.BusinessType;
+import com.cloudbase.common.web.auth.UserContext;
 import com.cloudbase.module.system.entity.SysMenu;
 import com.cloudbase.module.system.model.dto.IdDTO;
 import com.cloudbase.module.system.model.dto.MenuCreateDTO;
@@ -28,12 +29,24 @@ public class SysMenuController {
     private final ISysMenuService sysMenuService;
 
     /**
-     * 获取菜单树（全量，不分页）
+     * 获取菜单树（全量，不分页，菜单管理页使用）
      */
     @Log(title = "菜单管理", businessType = BusinessType.QUERY)
     @PostMapping("/tree")
     public AjaxResult tree() {
         return AjaxResult.success(sysMenuService.getMenuTree());
+    }
+
+    /**
+     * 获取当前用户有权限的菜单树（侧边栏/动态路由用）
+     */
+    @PostMapping("/userTree")
+    public AjaxResult userTree() {
+        Long userId = UserContext.getUserId();
+        if (userId == null) {
+            return AjaxResult.error("未登录");
+        }
+        return AjaxResult.success(sysMenuService.getMenuTreeByUserId(userId));
     }
 
     /**

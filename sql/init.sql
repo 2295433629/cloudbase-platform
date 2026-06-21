@@ -139,6 +139,18 @@ CREATE TABLE sys_role_menu (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色菜单关联';
 
 -- ----------------------------
+-- 角色部门关联表（数据权限-自定义）
+-- ----------------------------
+DROP TABLE IF EXISTS sys_role_dept;
+CREATE TABLE sys_role_dept (
+    id      BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键',
+    role_id BIGINT NOT NULL COMMENT '角色ID',
+    dept_id BIGINT NOT NULL COMMENT '部门ID',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_role_dept (role_id, dept_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='角色部门关联（数据权限）';
+
+-- ----------------------------
 -- 系统字典表
 -- ----------------------------
 DROP TABLE IF EXISTS sys_dict;

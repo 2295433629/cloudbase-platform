@@ -16,6 +16,12 @@ public interface ISysMenuService extends IService<SysMenu> {
     List<SysMenu> getMenuTree();
 
     /**
+     * 根据用户ID获取有权限的菜单树
+     * 超级管理员(userId=1)返回全量菜单
+     */
+    List<SysMenu> getMenuTreeByUserId(Long userId);
+
+    /**
      * 创建菜单
      */
     void createMenu(SysMenu menu);

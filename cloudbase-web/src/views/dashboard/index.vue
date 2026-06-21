@@ -1,7 +1,7 @@
 <template>
   <div class="dashboard">
-    <!-- 统计卡片 -->
-    <el-row :gutter="20">
+    <!-- 统计卡片（仅超级管理员可见） -->
+    <el-row :gutter="20" v-if="isSuperAdmin">
       <el-col :span="6">
         <el-card class="stat-card stat-card-blue" shadow="hover" @click="goTo('/org/user')">
           <div class="stat-content">
@@ -56,7 +56,7 @@
       </el-col>
     </el-row>
 
-    <el-row :gutter="20" style="margin-top: 20px">
+    <el-row :gutter="20" :style="{ marginTop: isSuperAdmin ? '20px' : '0' }">
       <!-- 操作趋势图 -->
       <el-col :span="16">
         <el-card shadow="hover">
@@ -78,8 +78,8 @@
     </el-row>
 
     <el-row :gutter="20" style="margin-top: 20px">
-      <!-- 快捷入口 -->
-      <el-col :span="8">
+      <!-- 快捷入口（仅超级管理员可见） -->
+      <el-col :span="8" v-if="isSuperAdmin">
         <el-card shadow="hover">
           <template #header>
             <span style="font-weight: 600">快捷入口</span>
@@ -113,7 +113,7 @@
         </el-card>
       </el-col>
       <!-- 最近操作 -->
-      <el-col :span="16">
+      <el-col :span="isSuperAdmin ? 16 : 24">
         <el-card shadow="hover">
           <template #header>
             <span style="font-weight: 600">最近操作记录</span>
@@ -137,7 +137,7 @@
 </template>
 
 <script setup lang="ts">
-import {onBeforeUnmount, onMounted, reactive, ref} from 'vue'
+import {computed, onBeforeUnmount, onMounted, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {useUserStore} from '@/stores/user'
 import {getDashboardStats, getDashboardTrend, getDashboardTypeDistribution, getRecentOperLogs} from '@/api/system'
@@ -146,6 +146,11 @@ import {Document, Menu, Monitor, Notebook, OfficeBuilding, User, UserFilled} fro
 
 const router = useRouter()
 const userStore = useUserStore()
+
+/** 超级管理员标识（拥有 *:*:* 通配权限） */
+const isSuperAdmin = computed(() => {
+  return userStore.permissions.includes('*') || userStore.permissions.includes('*:*:*')
+})
 
 const goTo = (path: string) => router.push(path)
 
@@ -352,7 +357,9 @@ function handleResize() {
 }
 
 onMounted(() => {
-  fetchStats()
+  if (isSuperAdmin.value) {
+    fetchStats()
+  }
   fetchRecentLogs()
   fetchTrendData().then(() => initTrendChart())
   fetchTypeData().then(() => initTypeChart())

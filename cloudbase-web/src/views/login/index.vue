@@ -13,14 +13,14 @@
         <p class="login-subtitle">企业级管理系统</p>
       </div>
 
-      <el-form :model="form" :rules="rules" ref="formRef" size="large">
+      <el-form :model="form" :rules="rules" ref="formRef" size="large" @keyup.enter="handleLogin" @submit.prevent>
         <el-form-item prop="account">
           <el-input v-model="form.account" placeholder="请输入账号" prefix-icon="User" clearable />
         </el-form-item>
 
         <el-form-item prop="password">
           <el-input v-model="form.password" type="password" placeholder="请输入密码" prefix-icon="Lock"
-                    @keyup.enter="handleLogin" show-password>
+                    show-password>
             <template #suffix>
               <el-tooltip :content="passwordStrength.text" placement="top" :disabled="passwordStrength.level === 0">
                 <div class="pwd-strength-bar" :style="{ width: passwordStrength.width }"

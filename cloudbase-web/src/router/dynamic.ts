@@ -1,6 +1,6 @@
 import type {RouteRecordRaw} from 'vue-router'
 import type {SysMenu} from '@/types/system'
-import {getMenuTree} from '@/api/system'
+import {getUserMenuTree} from '@/api/system'
 
 /**
  * 使用 Vite import.meta.glob 预加载所有视图组件
@@ -79,7 +79,7 @@ export function generateRoutes(menus: SysMenu[]): RouteRecordRaw[] {
  */
 export async function fetchDynamicRoutes(): Promise<RouteRecordRaw[]> {
   try {
-    const menus = await getMenuTree()
+    const menus = await getUserMenuTree()
     return generateRoutes(menus)
   } catch {
     console.warn('获取菜单树失败，使用静态路由')

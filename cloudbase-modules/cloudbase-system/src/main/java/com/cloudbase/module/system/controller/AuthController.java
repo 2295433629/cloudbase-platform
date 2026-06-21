@@ -8,13 +8,18 @@ import com.cloudbase.module.system.model.dto.ChangePasswordDTO;
 import com.cloudbase.module.system.model.dto.LoginDTO;
 import com.cloudbase.module.system.model.dto.UpdateProfileDTO;
 import com.cloudbase.module.system.service.CaptchaService;
+import com.cloudbase.module.system.service.ISysRoleService;
 import com.cloudbase.module.system.service.LoginService;
 import com.cloudbase.module.system.service.ProfileService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
@@ -30,6 +35,7 @@ public class AuthController {
     private final LoginService loginService;
     private final CaptchaService captchaService;
     private final ProfileService profileService;
+    private final ISysRoleService sysRoleService;
 
     /**
      * 获取验证码
@@ -59,6 +65,21 @@ public class AuthController {
     public AjaxResult logout(@RequestBody Map<String, String> params) {
         loginService.logout(params.get("token"));
         return AjaxResult.success();
+    }
+
+    /**
+     * 获取当前用户权限信息
+     */
+    @PostMapping("/permissions")
+    public AjaxResult getPermissions() {
+        Long userId = UserContext.getUserId();
+        if (userId == null) {
+            return AjaxResult.error("未登录");
+        }
+        java.util.Map<String, Object> data = new java.util.HashMap<>();
+        data.put("permissions", sysRoleService.getUserPermissions(userId));
+        data.put("roleCodes", sysRoleService.getUserRoleCodes(userId));
+        return AjaxResult.success(data);
     }
 
     // ==================== 个人中心 ====================

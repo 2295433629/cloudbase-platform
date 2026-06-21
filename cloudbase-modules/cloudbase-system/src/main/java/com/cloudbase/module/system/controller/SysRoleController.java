@@ -18,6 +18,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 /**
  * 角色管理（重构后使用DTO+Service）
  */
@@ -75,7 +79,9 @@ public class SysRoleController {
         role.setRoleId(dto.getRoleId());
         role.setRoleName(dto.getRoleName());
         role.setRoleCode(dto.getRoleCode());
-        role.setSort(dto.getSort() != null ? dto.getSort() : 0);
+        if (dto.getSort() != null) {
+            role.setSort(dto.getSort());
+        }
         role.setDataScope(dto.getDataScope());
         role.setStatus(dto.getStatus());
         role.setRemark(dto.getRemark());
@@ -98,10 +104,34 @@ public class SysRoleController {
      */
     @Log(title = "角色管理", businessType = BusinessType.UPDATE)
     @PostMapping("/updateStatus")
-    public AjaxResult updateStatus(@RequestBody java.util.Map<String, Object> params) {
+    public AjaxResult updateStatus(@RequestBody Map<String, Object> params) {
         Long roleId = Long.parseLong(params.get("roleId").toString());
         Integer status = Integer.parseInt(params.get("status").toString());
         sysRoleService.updateStatus(roleId, status);
         return AjaxResult.success();
+    }
+
+    /**
+     * 获取角色已分配的菜单ID列表
+     */
+    @PostMapping("/menus")
+    public AjaxResult getMenus(@RequestBody Map<String, Object> params) {
+        Long roleId = Long.parseLong(params.get("roleId").toString());
+        return AjaxResult.success(sysRoleService.getRoleMenuIds(roleId));
+    }
+
+    /**
+     * 为角色分配菜单权限（全量替换）
+     */
+    @Log(title = "角色管理", businessType = BusinessType.UPDATE)
+    @PostMapping("/assignMenus")
+    public AjaxResult assignMenus(@RequestBody Map<String, Object> params) {
+        Long roleId = Long.parseLong(params.get("roleId").toString());
+        @SuppressWarnings("unchecked")
+        List<Long> menuIds = ((List<Object>) params.get("menuIds")).stream()
+                .map(o -> Long.parseLong(o.toString()))
+                .collect(Collectors.toList());
+        sysRoleService.assignRoleMenus(roleId, menuIds);
+        return AjaxResult.success("分配成功");
     }
 }

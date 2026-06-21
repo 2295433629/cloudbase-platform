@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
 import com.cloudbase.common.enums.BusinessType;
+import com.cloudbase.common.web.cache.CacheService;
 import com.cloudbase.module.system.entity.SysOperLog;
 import com.cloudbase.module.system.mapper.SysDeptMapper;
 import com.cloudbase.module.system.mapper.SysDictMapper;
@@ -44,6 +45,7 @@ public class DashboardController {
     private final SysPostMapper postMapper;
     private final SysNoticeMapper noticeMapper;
     private final SysOperLogMapper operLogMapper;
+    private final CacheService cacheService;
 
     /**
      * 获取仪表盘统计数据
@@ -59,8 +61,9 @@ public class DashboardController {
         data.put("deptCount", deptMapper.selectCount(null));
         data.put("postCount", postMapper.selectCount(null));
         data.put("noticeCount", noticeMapper.selectCount(null));
-        // 在线用户数暂用0占位（需结合在线用户管理模块）
-        data.put("onlineUserCount", 0);
+        // 在线用户数（从缓存中统计 login_tokens:* 的 key 数量）
+        var onlineKeys = cacheService.keys("login_tokens:*");
+        data.put("onlineUserCount", onlineKeys != null ? onlineKeys.size() : 0);
         // 今日操作日志数
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
         Long todayCount = operLogMapper.selectCount(
