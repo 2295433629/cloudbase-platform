@@ -12,11 +12,20 @@ export const useUserStore = defineStore('user', () => {
   async function login(account: string, password: string, uuid: string, captcha: string): Promise<void> {
     const params: LoginParams = { account, password, uuid, captcha }
     const res = await loginApi(params)
+
+    // 登录成功后，先清除旧的会话数据，避免上次残留的 permissions/roleCodes 污染新会话
+    permissions.value = []
+    roleCodes.value = []
+    localStorage.removeItem('permissions')
+    localStorage.removeItem('roleCodes')
+
+    // 设置新 token 和用户信息
     token.value = res.token
     userInfo.value = res.userInfo
     localStorage.setItem('token', res.token)
     localStorage.setItem('userInfo', JSON.stringify(res.userInfo))
-    // 登录成功后获取权限信息
+
+    // 获取新用户的权限信息
     await fetchPermissions()
   }
 

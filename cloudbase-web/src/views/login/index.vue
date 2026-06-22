@@ -127,7 +127,7 @@ async function handleLogin() {
   try {
     await userStore.login(form.account, form.password, captchaUuid.value, form.captcha)
     ElMessage.success('登录成功')
-    router.push('/dashboard')
+    await router.push('/dashboard')
   } catch {
     refreshCaptcha()
     form.captcha = ''

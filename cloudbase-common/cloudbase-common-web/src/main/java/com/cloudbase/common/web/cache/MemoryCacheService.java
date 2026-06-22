@@ -2,8 +2,11 @@ package com.cloudbase.common.web.cache;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -100,6 +103,21 @@ public class MemoryCacheService implements CacheService {
         }
         long remaining = (entry.expireAt - System.currentTimeMillis()) / 1000;
         return Math.max(remaining, 0L);
+    }
+
+    @Override
+    public Long increment(String key, long timeout, TimeUnit unit) {
+        // computeIfAbsent + parseLong/toString 保证原子性（ConcurrentHashMap 在计算时锁住该桶）
+        long expireAt = System.currentTimeMillis() + unit.toMillis(timeout);
+        CacheEntry entry = store.computeIfAbsent(key, k -> new CacheEntry("0", expireAt));
+        // 如果 key 已过期，重置计数器
+        if (entry.isExpired()) {
+            entry = new CacheEntry("0", expireAt);
+            store.put(key, entry);
+        }
+        long newCount = Long.parseLong(entry.value) + 1;
+        store.put(key, new CacheEntry(String.valueOf(newCount), entry.expireAt));
+        return newCount;
     }
 
     /** 清理已过期的键 */

@@ -91,21 +91,28 @@ async function ensureDynamicRoutes(): Promise<void> {
         await userStore.fetchPermissions()
       }
       const routes = await fetchDynamicRoutes()
+      if (routes.length === 0) {
+        console.warn('[router] 动态路由为空，可能接口异常，下次导航将重试')
+        return  // 不标记为已加载，下次导航会重试
+      }
       routes.forEach(route => router.addRoute('Layout', route))
       console.log(`[router] 动态路由加载完成，共注册 ${routes.length} 条路由`)
       if (import.meta.env.DEV) {
         console.log('[router] 已注册路由:', router.getRoutes().map(r => `${r.name}(${r.path})`).join(', '))
       }
-    } catch (e) {
-      console.warn('[router] 加载动态路由失败', e)
-    } finally {
+      // 路由注册成功后再添加 catch-all
       if (!router.hasRoute('NotFoundRedirect')) {
         router.addRoute(catchAllRoute)
       }
       dynamicRoutesLoaded = true
+    } catch (e) {
+      console.warn('[router] 加载动态路由失败，下次导航将重试', e)
+      // 不设置 dynamicRoutesLoaded = true，确保下次导航会重试
     }
   })()
   await dynamicRoutesPromise
+  // Promise 锁只保护一次加载，后续调用应重新判断
+  dynamicRoutesPromise = null
 }
 
 router.beforeEach(async (to, _from, next) => {
@@ -133,9 +140,19 @@ router.beforeEach(async (to, _from, next) => {
   if (token && !dynamicRoutesLoaded) {
     console.log(`[router] 导航到 ${to.fullPath}，动态路由未加载，正在加载...`)
     await ensureDynamicRoutes()
-    console.log(`[router] 动态路由已就绪，重新导航到 ${to.fullPath}`)
-    // 加载完成后，用 path 重新导航触发路由重新匹配
-    next({ path: to.fullPath, replace: true })
+    // 加载完成后，如果动态路由确实已注册，重新导航触发路由重新匹配
+    if (dynamicRoutesLoaded) {
+      console.log(`[router] 动态路由已就绪，重新导航到 ${to.fullPath}`)
+      next({ path: to.fullPath, replace: true })
+    } else if (!localStorage.getItem('token')) {
+      // 加载过程中 token 被清除（如 401 拦截器触发），直接去登录页
+      console.warn('[router] token 已在加载过程中被清除，跳转登录')
+      next('/login')
+    } else {
+      // 加载失败（接口异常），先去首页，下次点击菜单会重试
+      console.warn('[router] 动态路由加载失败，降级到首页')
+      next('/dashboard')
+    }
     return
   }
 

@@ -5,7 +5,7 @@ export function loginApi(data: LoginParams): Promise<LoginResult> {
   return request({ url: '/auth/login', method: 'post', data })
 }
 
-export function getCaptcha(): Promise<{ uuid: string; img: string }> {
+export function getCaptcha(): Promise<{ uuid: string; image: string }> {
   return request({ url: '/auth/captcha', method: 'get' })
 }
 

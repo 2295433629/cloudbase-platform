@@ -31,6 +31,31 @@ pom:
 cloudbase:
   cache:
     type: redis
+  # 生产环境关闭 Druid 监控页面（或通过 allow 限制 IP）
+  druid:
+    enabled: true
+    allow: 127.0.0.1
+  # 生产 CORS 配置
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+  # 生产文件存储路径
+  storage:
+    base-path: /var/uploads/cloudbase
+
+# 生产环境关闭 mybatis-plus SQL日志输出
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.nologging.NoLoggingImpl
+
+# 生产环境 Actuator 仅暴露 health 和 info
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
 
 logging:
   level:

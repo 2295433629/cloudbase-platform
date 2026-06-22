@@ -31,6 +31,8 @@ public enum CommonExceptionEnum implements AbstractExceptionEnum {
     ACCOUNT_DISABLED("A0301", "账号已被禁用", 403),
     /** 验证码错误 */
     CAPTCHA_ERROR("A0400", "验证码错误", 400),
+    /** 接口限流（HTTP 429 Too Many Requests） */
+    RATE_LIMIT_EXCEEDED("A0500", "访问过于频繁，请稍后再试", 429),
 
     // ============ B: 系统业务错误 ============
     /** 数据不存在 */

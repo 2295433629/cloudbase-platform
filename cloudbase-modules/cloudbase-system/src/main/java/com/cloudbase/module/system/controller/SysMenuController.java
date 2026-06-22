@@ -2,6 +2,8 @@ package com.cloudbase.module.system.controller;
 
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
+import com.cloudbase.common.core.exception.BusinessException;
+import com.cloudbase.common.core.exception.CommonExceptionEnum;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.common.web.auth.UserContext;
 import com.cloudbase.module.system.entity.SysMenu;
@@ -44,7 +46,7 @@ public class SysMenuController {
     public AjaxResult userTree() {
         Long userId = UserContext.getUserId();
         if (userId == null) {
-            return AjaxResult.error("未登录");
+            throw new BusinessException(CommonExceptionEnum.NOT_LOGIN);
         }
         return AjaxResult.success(sysMenuService.getMenuTreeByUserId(userId));
     }

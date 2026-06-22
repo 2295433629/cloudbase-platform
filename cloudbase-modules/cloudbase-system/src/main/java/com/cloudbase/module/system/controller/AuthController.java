@@ -1,7 +1,10 @@
 package com.cloudbase.module.system.controller;
 
 import com.cloudbase.common.core.annotation.Log;
+import com.cloudbase.common.core.annotation.RateLimit;
 import com.cloudbase.common.core.domain.AjaxResult;
+import com.cloudbase.common.core.exception.BusinessException;
+import com.cloudbase.common.core.exception.CommonExceptionEnum;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.common.web.auth.UserContext;
 import com.cloudbase.module.system.model.dto.ChangePasswordDTO;
@@ -41,6 +44,7 @@ public class AuthController {
      * 获取验证码
      */
     @Log(title = "认证管理", businessType = BusinessType.QUERY)
+    @RateLimit(count = 10, time = 60, message = "获取验证码过于频繁，请稍后再试")
     @GetMapping("/captcha")
     public AjaxResult captcha() {
         return AjaxResult.success(captchaService.generateCaptcha());
@@ -50,6 +54,7 @@ public class AuthController {
      * 用户登录
      */
     @Log(title = "认证管理", businessType = BusinessType.OTHER)
+    @RateLimit(count = 5, time = 60, message = "登录尝试过于频繁，请1分钟后再试")
     @PostMapping("/login")
     public AjaxResult login(@Valid @RequestBody LoginDTO dto, HttpServletRequest request) {
         String ip = getClientIp(request);
@@ -74,7 +79,7 @@ public class AuthController {
     public AjaxResult getPermissions() {
         Long userId = UserContext.getUserId();
         if (userId == null) {
-            return AjaxResult.error("未登录");
+            throw new BusinessException(CommonExceptionEnum.NOT_LOGIN);
         }
         java.util.Map<String, Object> data = new java.util.HashMap<>();
         data.put("permissions", sysRoleService.getUserPermissions(userId));
@@ -92,7 +97,7 @@ public class AuthController {
     public AjaxResult getProfile() {
         Long userId = UserContext.getUserId();
         if (userId == null) {
-            return AjaxResult.error("未登录");
+            throw new BusinessException(CommonExceptionEnum.NOT_LOGIN);
         }
         return AjaxResult.success(profileService.getProfile(userId));
     }
@@ -105,7 +110,7 @@ public class AuthController {
     public AjaxResult updateProfile(@RequestBody UpdateProfileDTO dto) {
         Long userId = UserContext.getUserId();
         if (userId == null) {
-            return AjaxResult.error("未登录");
+            throw new BusinessException(CommonExceptionEnum.NOT_LOGIN);
         }
         profileService.updateProfile(userId, dto.getRealName(), dto.getPhone(),
                 dto.getEmail(), dto.getAvatar());
@@ -120,7 +125,7 @@ public class AuthController {
     public AjaxResult changePassword(@Valid @RequestBody ChangePasswordDTO dto) {
         Long userId = UserContext.getUserId();
         if (userId == null) {
-            return AjaxResult.error("未登录");
+            throw new BusinessException(CommonExceptionEnum.NOT_LOGIN);
         }
         profileService.changePassword(userId, dto.getOldPassword(), dto.getNewPassword());
         return AjaxResult.success();

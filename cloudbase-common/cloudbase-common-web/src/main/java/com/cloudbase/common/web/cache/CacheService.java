@@ -40,4 +40,19 @@ public interface CacheService {
      * 获取key的剩余过期时间（秒），-1表示永不过期，-2表示key不存在
      */
     Long getExpire(String key);
+
+    /**
+     * 原子自增并设置过期时间（用于限流计数器）
+     * <p>
+     * 若 key 不存在，先初始化为 0 再自增，返回 1。
+     * 若 key 已存在，直接自增并返回新值。
+     * 过期时间仅在 key 首次创建时设置（后续自增不重置 TTL）。
+     * </p>
+     *
+     * @param key     缓存键
+     * @param timeout 过期时间
+     * @param unit    时间单位
+     * @return 自增后的值
+     */
+    Long increment(String key, long timeout, TimeUnit unit);
 }

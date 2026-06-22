@@ -46,4 +46,14 @@ public class RedisCacheService implements CacheService {
     public Long getExpire(String key) {
         return redisTemplate.getExpire(key);
     }
+
+    @Override
+    public Long increment(String key, long timeout, TimeUnit unit) {
+        Long count = redisTemplate.opsForValue().increment(key);
+        // 首次创建时设置过期时间，后续自增不重置 TTL
+        if (count != null && count == 1L) {
+            redisTemplate.expire(key, timeout, unit);
+        }
+        return count != null ? count : 0L;
+    }
 }

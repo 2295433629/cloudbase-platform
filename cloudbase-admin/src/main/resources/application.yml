@@ -15,6 +15,21 @@ spring:
       initial-size: 5
       min-idle: 5
       max-active: 20
+      # SQL 统计与慢 SQL 监控
+      filters: stat,wall
+      filter:
+        stat:
+          enabled: true
+          slow-sql-millis: 2000
+          log-slow-sql: true
+        wall:
+          enabled: true
+
+  # 文件上传大小限制
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 100MB
 
   # Redis配置
   data:
@@ -43,12 +58,43 @@ mybatis-plus:
 # CloudBase JWT
 cloudbase:
   jwt:
+    # 生产环境建议使用 ENC(加密值) 格式，通过环境变量 JASYPT_ENCRYPTOR_PASSWORD 提供主密码
+    # 加密命令: mvn jasypt:encrypt-value -Djasypt.encryptor.password="主密码" -Djasypt.plugin.value="待加密值"
     secret: CloudBase@2026!JWTSecretKeyForTokenSigning
     expiration: 7200  # 2小时
 
   # 缓存配置：memory（默认）或 redis
   cache:
     type: memory
+
+  # 文件存储
+  storage:
+    base-path: ./uploads/cloudbase
+    access-path: /files
+
+  # CORS 跨域（生产环境部署时改为实际前端域名，开发环境需包含 Vite 开发服务器端口）
+  cors:
+    allowed-origins: http://localhost:5173,http://localhost:3000
+
+  # 异步线程池
+  async:
+    core-size: 8
+    max-size: 32
+    queue-capacity: 256
+    keep-alive: 60
+
+  # Druid 监控
+  druid:
+    enabled: true
+    login-username: admin
+    login-password: admin123
+
+# Jasypt 配置加密（主密码通过环境变量 JASYPT_ENCRYPTOR_PASSWORD 注入）
+jasypt:
+  encryptor:
+    algorithm: PBEWithMD5AndDES
+    iv-generator-classname: org.jasypt.iv.NoIvGenerator
+    password: ${JASYPT_ENCRYPTOR_PASSWORD:cloudbase2026}
 
 # Knife4j API文档
 knife4j:
@@ -66,3 +112,16 @@ logging:
   level:
     com.cloudbase: debug
     org.springframework: info
+
+# Actuator 健康监控
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+  info:
+    env:
+      enabled: true

@@ -3,6 +3,7 @@ package com.cloudbase.module.system.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.cloudbase.common.core.annotation.Sensitive;
 import com.cloudbase.common.core.pojo.entity.BaseEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -34,9 +35,11 @@ public class SysUser extends BaseEntity {
     private String realName;
 
     /** 手机号 */
+    @Sensitive(strategy = Sensitive.SensitiveStrategy.PHONE)
     private String phone;
 
     /** 邮箱 */
+    @Sensitive(strategy = Sensitive.SensitiveStrategy.EMAIL)
     private String email;
 
     /** 头像 */

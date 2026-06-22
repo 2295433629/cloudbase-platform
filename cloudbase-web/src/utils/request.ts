@@ -51,8 +51,28 @@ function getRouter() {
   return import('@/router').then(m => m.default)
 }
 
+/** 跳转登录页（避免重复导航） */
+function redirectToLogin(): void {
+  getRouter().then(router => {
+    if (router.currentRoute.value.path !== '/login') {
+      router.push('/login')
+    }
+  })
+}
+
 /** 需要跳转登录页的认证错误码 */
 const AUTH_ERROR_CODES = new Set(['A0200', 'A0201', 'A0202'])
+
+/**
+ * 清除所有认证相关的 localStorage 数据
+ * Token 失效时一并清除 permissions/roleCodes，避免下次登录时残留旧数据
+ */
+function clearAuthStorage(): void {
+  localStorage.removeItem('token')
+  localStorage.removeItem('userInfo')
+  localStorage.removeItem('permissions')
+  localStorage.removeItem('roleCodes')
+}
 
 // 响应拦截器
 request.interceptors.response.use(
@@ -63,11 +83,12 @@ request.interceptors.response.use(
     if (res.code === '00000') {
       return 'rows' in res ? res : res.data
     }
-    // 业务错误（HTTP 200 但 code 非 "00000"，极少见）
+    // 业务错误（HTTP 200 但 code 非 "00000"）
     ElMessage.error(res.msg || '请求失败')
-    if (AUTH_ERROR_CODES.has(res.code)) {
-      localStorage.removeItem('token')
-      getRouter().then(router => router.push('/login'))
+    // code 为 null/undefined 视为认证状态异常（兆底：后端 controller 未抛标准异常时）
+    if (res.code == null || AUTH_ERROR_CODES.has(res.code)) {
+      clearAuthStorage()
+      redirectToLogin()
     }
     return Promise.reject(new Error(res.msg || '请求失败'))
   },
@@ -84,10 +105,10 @@ request.interceptors.response.use(
     const data = error.response?.data || {}
 
     if (status === 401 || AUTH_ERROR_CODES.has(data?.code)) {
-      // 认证失败 → 跳转登录
+      // 认证失败 → 清除所有会话数据 → 跳转登录
       ElMessage.error(data?.msg || '登录已过期，请重新登录')
-      localStorage.removeItem('token')
-      getRouter().then(router => router.push('/login'))
+      clearAuthStorage()
+      redirectToLogin()
     } else if (status === 403 || data?.code === 'A0300' || data?.code === 'A0301') {
       // 权限不足 → 跳转 403 页
       ElMessage.error(data?.msg || '权限不足')

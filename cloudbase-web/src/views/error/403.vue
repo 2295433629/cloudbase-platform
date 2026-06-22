@@ -6,12 +6,14 @@
       <p class="error-message">{{ message }}</p>
       <el-button type="primary" @click="goHome">返回首页</el-button>
       <el-button @click="goBack">返回上一页</el-button>
+      <el-button type="warning" @click="reLogin">重新登录</el-button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import {useRoute, useRouter} from 'vue-router'
+import {resetDynamicRoutes} from '@/router'
 
 const route = useRoute()
 const router = useRouter()
@@ -24,6 +26,15 @@ function goHome(): void {
 
 function goBack(): void {
   router.back()
+}
+
+function reLogin(): void {
+  localStorage.removeItem('token')
+  localStorage.removeItem('userInfo')
+  localStorage.removeItem('permissions')
+  localStorage.removeItem('roleCodes')
+  resetDynamicRoutes()
+  router.push('/login')
 }
 </script>
 
