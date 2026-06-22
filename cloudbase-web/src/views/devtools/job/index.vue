@@ -43,7 +43,7 @@
     </el-dialog>
 
     <el-card shadow="hover" style="margin-top:20px">
-      <template #header><span>📋 执行日志</span><el-button size="small" type="danger" style="float:right" @click="handleClearLog">清空</el-button></template>
+      <template #header><span>📋 执行日志</span><el-button size="small" type="danger" style="float:right" @click="handleClearLog" :disabled="logTotal === 0" v-show="false">清空</el-button></template>
       <el-table :data="logData" size="small" v-loading="logLoading">
         <el-table-column type="index" label="#" width="50" />
         <el-table-column prop="jobName" label="任务名称" width="150" />

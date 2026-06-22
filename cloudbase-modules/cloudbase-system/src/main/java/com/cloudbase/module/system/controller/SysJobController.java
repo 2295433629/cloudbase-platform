@@ -146,7 +146,7 @@ public class SysJobController {
     @Log(title = "定时任务管理", businessType = BusinessType.DELETE)
     @PostMapping("/log/clear")
     public AjaxResult logClear() {
-        sysJobLogMapper.delete(new LambdaQueryWrapper<>());
+        sysJobLogMapper.delete(new LambdaQueryWrapper<SysJobLog>().isNotNull(SysJobLog::getLogId));
         return AjaxResult.success();
     }
 }

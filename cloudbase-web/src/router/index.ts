@@ -62,12 +62,50 @@ const router = createRouter({
 })
 
 let dynamicRoutesLoaded = false
+/** Promise 锁：防止并发导航重复加载动态路由 */
+let dynamicRoutesPromise: Promise<void> | null = null
 
 /**
  * 重置动态路由标记（登出时调用）
  */
 export function resetDynamicRoutes(): void {
   dynamicRoutesLoaded = false
+  dynamicRoutesPromise = null
+}
+
+/**
+ * 加载动态路由（带 Promise 锁，确保全局只加载一次）
+ * 多个并发导航会等待同一个 Promise，避免重复拉取和注册
+ */
+async function ensureDynamicRoutes(): Promise<void> {
+  if (dynamicRoutesLoaded) return
+  if (dynamicRoutesPromise) {
+    await dynamicRoutesPromise
+    return
+  }
+
+  dynamicRoutesPromise = (async () => {
+    try {
+      const userStore = useUserStore()
+      if (!userStore.permissions.length && !localStorage.getItem('permissions')) {
+        await userStore.fetchPermissions()
+      }
+      const routes = await fetchDynamicRoutes()
+      routes.forEach(route => router.addRoute('Layout', route))
+      console.log(`[router] 动态路由加载完成，共注册 ${routes.length} 条路由`)
+      if (import.meta.env.DEV) {
+        console.log('[router] 已注册路由:', router.getRoutes().map(r => `${r.name}(${r.path})`).join(', '))
+      }
+    } catch (e) {
+      console.warn('[router] 加载动态路由失败', e)
+    } finally {
+      if (!router.hasRoute('NotFoundRedirect')) {
+        router.addRoute(catchAllRoute)
+      }
+      dynamicRoutesLoaded = true
+    }
+  })()
+  await dynamicRoutesPromise
 }
 
 router.beforeEach(async (to, _from, next) => {
@@ -91,37 +129,19 @@ router.beforeEach(async (to, _from, next) => {
     return
   }
 
-  // 已登录且动态路由未加载 → 加载动态路由
+  // 已登录且动态路由未加载 → 等待加载完成（Promise 锁防止并发重复加载）
   if (token && !dynamicRoutesLoaded) {
-    try {
-      // 刷新页面时确保权限数据已加载
-      const userStore = useUserStore()
-      if (!userStore.permissions.length && !localStorage.getItem('permissions')) {
-        await userStore.fetchPermissions()
-      }
-      const routes = await fetchDynamicRoutes()
-      // 将所有动态路由注册到 Layout 下
-      routes.forEach(route => router.addRoute('Layout', route))
-      console.log(`[router] 动态路由加载完成，共注册 ${routes.length} 条路由`)
-    } catch (e) {
-      console.warn('加载动态路由失败', e)
-    }
-
-    // 无论成功与否，都注册 catch-all（确保未知路径能匹配到 404）
-    // catch-all 只在此处注册，不在 staticRoutes 中，
-    // 保证它永远在动态路由之后才被匹配
-    if (!router.hasRoute('NotFoundRedirect')) {
-      router.addRoute(catchAllRoute)
-    }
-    dynamicRoutesLoaded = true
-
-    // 用 path 重新导航，触发路由重新匹配（此时动态路由已注册）
+    console.log(`[router] 导航到 ${to.fullPath}，动态路由未加载，正在加载...`)
+    await ensureDynamicRoutes()
+    console.log(`[router] 动态路由已就绪，重新导航到 ${to.fullPath}`)
+    // 加载完成后，用 path 重新导航触发路由重新匹配
     next({ path: to.fullPath, replace: true })
     return
   }
 
   // 动态路由已加载完毕，若当前仍命中 catch-all 说明页面确实不存在
   if (dynamicRoutesLoaded && to.name === 'NotFoundRedirect') {
+    console.warn(`[router] 路由未匹配: ${to.fullPath} → 404`)
     next({ path: '/404', replace: true })
     return
   }

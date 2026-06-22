@@ -96,7 +96,7 @@ public class SysOperLogController {
     @Log(title = "操作日志管理", businessType = BusinessType.DELETE)
     @PostMapping("/clear")
     public AjaxResult clear() {
-        operLogMapper.delete(new LambdaQueryWrapper<>());
+        operLogMapper.delete(new LambdaQueryWrapper<SysOperLog>().isNotNull(SysOperLog::getLogId));
         return AjaxResult.success();
     }
 }

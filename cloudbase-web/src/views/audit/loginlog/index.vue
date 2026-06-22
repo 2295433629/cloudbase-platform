@@ -39,7 +39,7 @@
             <el-button type="success" size="small" @click="handleExport" :disabled="tableData.length === 0">
               <el-icon><Download /></el-icon>导出
             </el-button>
-            <el-button type="danger" size="small" @click="handleClear">
+            <el-button type="danger" size="small" @click="handleClear" :disabled="total === 0">
               <el-icon><Delete /></el-icon>清空
             </el-button>
           </div>

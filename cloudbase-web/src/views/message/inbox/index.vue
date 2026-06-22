@@ -1,59 +1,82 @@
 <template>
-  <div class="message-container">
+  <div class="inbox-container">
+    <!-- 搜索区 -->
     <el-card class="search-card">
-      <el-row :gutter="20">
-        <el-col :span="8">
-          <el-form :inline="true">
-            <el-form-item label="类型">
-              <el-select v-model="query.type" placeholder="全部" clearable style="width: 150px">
-                <el-option label="通知" value="NOTICE" />
-                <el-option label="公告" value="ANNOUNCEMENT" />
-              </el-select>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" @click="fetchData">查询</el-button>
-              <el-button @click="fetchData">
-                <el-icon><Refresh /></el-icon>
-                刷新
-              </el-button>
-              <el-button type="success" @click="handleMarkAllRead" v-if="unreadCount > 0">
-                <el-icon><Check /></el-icon>
-                全部标为已读
-                <el-badge :value="unreadCount" class="unread-badge" />
-              </el-button>
-            </el-form-item>
-          </el-form>
-        </el-col>
-      </el-row>
+      <el-form :model="query" inline>
+        <el-form-item label="消息类型">
+          <el-select v-model="query.type" placeholder="全部" clearable style="width: 140px">
+            <el-option label="通知" value="NOTICE" />
+            <el-option label="公告" value="ANNOUNCEMENT" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="阅读状态">
+          <el-select v-model="query.readStatus" placeholder="全部" clearable style="width: 120px">
+            <el-option label="未读" value="unread" />
+            <el-option label="已读" value="read" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="fetchData">查询</el-button>
+          <el-button @click="resetQuery">重置</el-button>
+        </el-form-item>
+      </el-form>
     </el-card>
 
+    <!-- 列表区 -->
     <el-card class="table-card">
-      <el-table :data="tableData" stripe v-loading="loading" highlight-current-row
-                @current-change="handleRowClick">
-        <el-table-column type="index" label="#" width="50" :index="(p) => (p + 1) * 10" />
-        <el-table-column label="未读" width="60">
+      <template #header>
+        <div class="card-header">
+          <span>
+            站内消息
+            <el-badge v-if="unreadCount > 0" :value="unreadCount" :max="99" style="margin-left: 8px" />
+          </span>
+          <div>
+            <el-button type="success" size="small" @click="handleMarkAllRead" :disabled="unreadCount === 0">
+              <el-icon><Check /></el-icon>全部标为已读
+            </el-button>
+            <el-button size="small" @click="fetchData">
+              <el-icon><Refresh /></el-icon>刷新
+            </el-button>
+          </div>
+        </div>
+      </template>
+
+      <el-table
+        :data="tableData"
+        stripe
+        v-loading="loading"
+        highlight-current-row
+        @row-click="handleRowClick"
+        :row-class-name="tableRowClassName"
+        style="cursor: pointer"
+      >
+        <el-table-column type="index" label="#" width="55" align="center"
+          :index="(p) => (query.pageNo - 1) * query.pageSize + p + 1" />
+        <el-table-column label="" width="40" align="center">
           <template #default="{ row }">
-            <el-badge :value="row.isRead === 0 ? 1 : 0" :hidden="row.isRead === 1" :value-max="1">
-              <el-icon :size="16"><BellFilled /></el-icon>
-            </el-badge>
+            <span v-if="row.isRead === 0" class="unread-dot"></span>
           </template>
         </el-table-column>
-        <el-table-column prop="title" label="标题" min-width="200" show-overflow-tooltip />
-        <el-table-column label="类型" width="80">
+        <el-table-column prop="title" label="标题" min-width="250" show-overflow-tooltip>
+          <template #default="{ row }">
+            <span :class="{ 'title-unread': row.isRead === 0 }">{{ row.title }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="类型" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.msgType === 'NOTICE' ? '' : 'warning'" size="small">
               {{ row.msgType === 'NOTICE' ? '通知' : '公告' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="80">
+        <el-table-column label="状态" width="80" align="center">
           <template #default="{ row }">
             <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
               {{ row.status === 1 ? '已发布' : '已撤回' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="发布时间" width="180" />
+        <el-table-column prop="createTime" label="发布时间" width="170" />
       </el-table>
     </el-card>
 
@@ -73,15 +96,17 @@
     <!-- 消息详情弹窗 -->
     <el-dialog v-model="detailVisible" :title="currentMsg?.title || '消息详情'" width="700px" destroy-on-close>
       <el-descriptions :column="2" border v-if="currentMsg">
-        <el-descriptions-item label="标题">{{ currentMsg.title }}</el-descriptions-item>
+        <el-descriptions-item label="标题" :span="2">{{ currentMsg.title }}</el-descriptions-item>
         <el-descriptions-item label="类型">
           <el-tag :type="currentMsg.msgType === 'NOTICE' ? '' : 'warning'" size="small">
             {{ currentMsg.msgType === 'NOTICE' ? '通知' : '公告' }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="发送方式">{{ currentMsg.sendType === 'ALL' ? '全部发送' : '按角色发送' }}</el-descriptions-item>
+        <el-descriptions-item label="发送方式">
+          {{ currentMsg.sendType === 'ALL' ? '全部发送' : '按角色发送' }}
+        </el-descriptions-item>
         <el-descriptions-item label="发布时间">{{ currentMsg.createTime }}</el-descriptions-item>
-        <el-descriptions-item label="阅读时间" :span="2">
+        <el-descriptions-item label="阅读时间">
           {{ currentMsg.readTime || '未阅读' }}
         </el-descriptions-item>
       </el-descriptions>
@@ -98,12 +123,12 @@
 import {onMounted, onUnmounted, reactive, ref} from 'vue'
 import {getMessagePage, getUnreadCount, markAllMessagesRead, markMessageRead} from '@/api/message'
 import {ElMessage} from 'element-plus'
-import {BellFilled, Check, Refresh} from '@element-plus/icons-vue'
+import {Check, Refresh} from '@element-plus/icons-vue'
 
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const total = ref(0)
-const query = reactive({ type: '', pageNo: 1, pageSize: 10 })
+const query = reactive({ type: '', readStatus: '' as string, pageNo: 1, pageSize: 20 })
 const detailVisible = ref(false)
 const currentMsg = ref<any>(null)
 const unreadCount = ref(0)
@@ -113,8 +138,18 @@ let refreshTimer: ReturnType<typeof setInterval> | null = null
 async function fetchData() {
   loading.value = true
   try {
-    const res = await getMessagePage(query)
-    tableData.value = res.rows || []
+    const params: any = { ...query }
+    // readStatus 不需要传给后端，前端过滤
+    delete params.readStatus
+    const res = await getMessagePage(params)
+    let rows = res.rows || []
+    // 前端按阅读状态过滤
+    if (query.readStatus === 'unread') {
+      rows = rows.filter(r => r.isRead === 0)
+    } else if (query.readStatus === 'read') {
+      rows = rows.filter(r => r.isRead === 1)
+    }
+    tableData.value = rows
     total.value = Number(res.total) || 0
   } catch {
     tableData.value = []
@@ -122,6 +157,13 @@ async function fetchData() {
   } finally {
     loading.value = false
   }
+}
+
+function resetQuery() {
+  query.type = ''
+  query.readStatus = ''
+  query.pageNo = 1
+  fetchData()
 }
 
 async function fetchUnreadCount() {
@@ -132,6 +174,10 @@ async function fetchUnreadCount() {
   }
 }
 
+function tableRowClassName({ row }: { row: any }) {
+  return row.isRead === 0 ? 'unread-row' : ''
+}
+
 async function handleRowClick(row: any) {
   currentMsg.value = row
   detailVisible.value = true
@@ -140,7 +186,6 @@ async function handleRowClick(row: any) {
       await markMessageRead({ messageId: row.id })
       row.isRead = 1
       fetchUnreadCount()
-      fetchData()
     } catch { /* ignore */ }
   }
 }
@@ -161,14 +206,12 @@ async function markCurrentRead() {
     currentMsg.value.isRead = 1
     ElMessage.success('已标为已读')
     fetchUnreadCount()
-    fetchData()
   } catch { /* ignore */ }
 }
 
 onMounted(() => {
   fetchData()
   fetchUnreadCount()
-  // 每30秒刷新未读数
   refreshTimer = setInterval(fetchUnreadCount, 30000)
 })
 
@@ -178,15 +221,52 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.message-container { display: flex; flex-direction: column; gap: 16px; }
+.inbox-container { display: flex; flex-direction: column; gap: 16px; }
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+
+/* 未读圆点指示器 */
+.unread-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #409eff;
+}
+
+/* 未读标题加粗 */
+.title-unread {
+  font-weight: 600;
+  color: #303133;
+}
+
+/* 未读行背景 */
+:deep(.unread-row) {
+  background-color: #f0f7ff !important;
+}
+:deep(.unread-row:hover > td) {
+  background-color: #e6f0fa !important;
+}
+:root.dark :deep(.unread-row) {
+  background-color: #1a2332 !important;
+}
+:root.dark :deep(.unread-row:hover > td) {
+  background-color: #1e2a3a !important;
+}
+:root.dark .title-unread {
+  color: #e0e0e0;
+}
+
+/* 消息内容样式 */
 .message-content {
   line-height: 1.8;
   color: #303133;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 6px;
+  min-height: 100px;
 }
 :root.dark .message-content {
   color: var(--text-color);
-}
-.unread-badge {
-  margin-left: 8px;
+  background: #1a1a1a;
 }
 </style>

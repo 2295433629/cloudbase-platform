@@ -243,10 +243,10 @@ CREATE TABLE sys_notice (
 
 -- ----------------------------
 -- 初始化数据：超级管理员
--- 密码: 123456 (SHA2(CONCAT(password, account), 256))
+-- 密码: admin@2026 (SHA2(CONCAT(password, account), 256))
 -- ----------------------------
 INSERT INTO sys_user (user_id, account, password, real_name, status)
-VALUES (1, 'admin', SHA2(CONCAT('123456', 'admin'), 256), '超级管理员', 1);
+VALUES (1, 'admin', SHA2(CONCAT('admin@2026', 'admin'), 256), '超级管理员', 1);
 
 -- ----------------------------
 -- 初始化菜单（按职能域分组，重构后的菜单结构）

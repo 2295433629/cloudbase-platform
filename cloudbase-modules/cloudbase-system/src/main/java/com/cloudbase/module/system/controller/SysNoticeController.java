@@ -48,6 +48,9 @@ public class SysNoticeController {
         if (params.containsKey("noticeTitle")) {
             wrapper.like(SysNotice::getNoticeTitle, params.get("noticeTitle"));
         }
+        if (params.containsKey("noticeType") && params.get("noticeType") != null) {
+            wrapper.eq(SysNotice::getNoticeType, Integer.parseInt(params.get("noticeType").toString()));
+        }
         wrapper.orderByDesc(SysNotice::getCreateTime);
 
         Page<SysNotice> page = noticeMapper.selectPage(new Page<>(pageInfo.pageNo(), pageInfo.pageSize()), wrapper);

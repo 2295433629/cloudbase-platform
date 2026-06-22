@@ -72,7 +72,7 @@ public class SysLoginLogController {
     @Log(title = "登录日志管理", businessType = BusinessType.DELETE)
     @PostMapping("/clear")
     public AjaxResult clear() {
-        loginLogMapper.delete(new LambdaQueryWrapper<>());
+        loginLogMapper.delete(new LambdaQueryWrapper<SysLoginLog>().isNotNull(SysLoginLog::getLoginId));
         return AjaxResult.success();
     }
 }

@@ -26,7 +26,7 @@
       </el-form>
     </el-card>
     <el-card>
-      <template #header><div class="card-header"><span>操作日志</span><div><el-button type="success" size="small" @click="handleExport" :disabled="tableData.length === 0"><el-icon><Download /></el-icon>导出</el-button><el-button type="danger" size="small" @click="handleClear"><el-icon><Delete /></el-icon>清空</el-button></div></div></template>
+      <template #header><div class="card-header"><span>操作日志</span><div><el-button type="success" size="small" @click="handleExport" :disabled="tableData.length === 0"><el-icon><Download /></el-icon>导出</el-button><el-button type="danger" size="small" @click="handleClear" :disabled="total === 0" v-show="false"><el-icon><Delete /></el-icon>清空</el-button></div></div></template>
       <el-table :data="tableData" stripe v-loading="loading">
         <el-table-column type="index" label="#" width="55" align="center" :index="(p) => (query.pageNo - 1) * query.pageSize + p + 1" />
         <el-table-column prop="module" label="模块" width="120" show-overflow-tooltip />
