@@ -3,6 +3,7 @@ package com.cloudbase.module.system.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
+import com.cloudbase.common.core.domain.PageQuery;
 import com.cloudbase.common.core.domain.TableDataInfo;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.common.web.auth.UserContext;
@@ -39,10 +40,7 @@ public class SysMessageController {
         Long userId = UserContext.getUserId();
         if (userId == null) return TableDataInfo.build(List.of(), 0);
 
-        int pageNo = params.containsKey("pageNo") ? Integer.parseInt(params.get("pageNo").toString()) : 1;
-        int pageSize = params.containsKey("pageSize") ? Integer.parseInt(params.get("pageSize").toString()) : 10;
-        pageNo = Math.max(pageNo, 1);
-        pageSize = Math.min(Math.max(pageSize, 1), 100);
+        var pageInfo = PageQuery.of(params, 10);
         String type = params.containsKey("type") ? params.get("type").toString() : null;
 
         // 先查总数
@@ -55,8 +53,8 @@ public class SysMessageController {
 
         // 查分页数据（关联已读状态）
         List<Map<String, Object>> allRecords = messageMapper.selectMessagePage(userId, type);
-        int fromIndex = Math.min((pageNo - 1) * pageSize, allRecords.size());
-        int toIndex = Math.min(fromIndex + pageSize, allRecords.size());
+        int fromIndex = Math.min((pageInfo.pageNo() - 1) * pageInfo.pageSize(), allRecords.size());
+        int toIndex = Math.min(fromIndex + pageInfo.pageSize(), allRecords.size());
         List<Map<String, Object>> pageRecords = allRecords.subList(fromIndex, toIndex);
 
         return TableDataInfo.build(pageRecords, total);

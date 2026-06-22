@@ -26,7 +26,7 @@
         </template>
       </el-table-column>
     </el-table>
-    <el-pagination v-model:current-page="pageNo" :page-size="20" :total="total" layout="total, prev, pager, next" @current-change="loadData" />
+    <el-pagination v-model:current-page="pageNo" v-model:page-size="pageSize" :total="total" :page-sizes="[10, 20, 50]" :hide-on-single-page="false" layout="total, sizes, prev, pager, next, jumper" background @size-change="loadData" @current-change="loadData" style="margin-top: 16px; justify-content: flex-end" />
 
     <el-dialog :title="dialogTitle" v-model="dialogVisible" width="550px">
       <el-form :model="form" label-width="100px">
@@ -44,7 +44,8 @@
 
     <el-card shadow="hover" style="margin-top:20px">
       <template #header><span>📋 执行日志</span><el-button size="small" type="danger" style="float:right" @click="handleClearLog">清空</el-button></template>
-      <el-table :data="logData" size="small">
+      <el-table :data="logData" size="small" v-loading="logLoading">
+        <el-table-column type="index" label="#" width="50" />
         <el-table-column prop="jobName" label="任务名称" width="150" />
         <el-table-column label="状态" width="80"><template #default="{ row }"><el-tag :type="row.status===1?'success':'danger'">{{ row.status===1?'成功':'失败' }}</el-tag></template></el-table-column>
         <el-table-column prop="costTime" label="耗时(ms)" width="100" />
@@ -52,6 +53,7 @@
         <el-table-column prop="exceptionInfo" label="异常" show-overflow-tooltip />
       </el-table>
     </el-card>
+    <el-pagination v-model:current-page="logPageNo" v-model:page-size="logPageSize" :total="logTotal" :page-sizes="[10, 20, 50, 100]" :hide-on-single-page="false" layout="total, sizes, prev, pager, next, jumper" background @size-change="loadLogData" @current-change="loadLogData" style="margin-top: 12px; justify-content: flex-end" />
   </div>
 </template>
 
@@ -63,17 +65,28 @@ import api from '@/api'
 const tableData = ref([])
 const logData = ref([])
 const pageNo = ref(1)
+const pageSize = ref(20)
 const total = ref(0)
+const logPageNo = ref(1)
+const logPageSize = ref(10)
+const logTotal = ref(0)
+const logLoading = ref(false)
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const form = reactive({ jobId: null, jobName: '', jobGroup: 'DEFAULT', invokeTarget: '', cronExpression: '', remark: '', concurrent: 1 })
 const searchForm = reactive({ jobName: '' })
 
 const loadData = () => {
-  api.post('/sys/job/page', { pageNo: pageNo.value, pageSize: 20, ...searchForm }).then(res => {
-    tableData.value = res.rows; total.value = res.total
+  api.post('/sys/job/page', { pageNo: pageNo.value, pageSize: pageSize.value, ...searchForm }).then(res => {
+    tableData.value = res.rows || []; total.value = Number(res.total) || 0
   })
-  api.post('/sys/job/log/page', { pageNo: 1, pageSize: 50 }).then(res => { logData.value = res.rows })
+  loadLogData()
+}
+const loadLogData = () => {
+  logLoading.value = true
+  api.post('/sys/job/log/page', { pageNo: logPageNo.value, pageSize: logPageSize.value }).then(res => {
+    logData.value = res.rows || []; logTotal.value = Number(res.total) || 0
+  }).finally(() => { logLoading.value = false })
 }
 onMounted(loadData)
 
@@ -87,5 +100,5 @@ const handleSubmit = () => {
   const url = form.jobId ? '/sys/job/edit' : '/sys/job/add'
   api.post(url, form).then(() => { ElMessage.success('操作成功'); dialogVisible.value = false; loadData() })
 }
-const handleClearLog = () => { ElMessageBox.confirm('清空执行日志?', '警告', { type: 'warning' }).then(() => { api.post('/sys/job/log/clear').then(() => { ElMessage.success('已清空'); loadData() }) }) }
+const handleClearLog = () => { ElMessageBox.confirm('清空执行日志?', '警告', { type: 'warning' }).then(() => { api.post('/sys/job/log/clear').then(() => { ElMessage.success('已清空'); loadLogData() }) }) }
 </script>

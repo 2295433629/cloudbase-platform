@@ -4,7 +4,7 @@
       <el-input v-model="searchForm.tableName" placeholder="表名" style="width:250px" clearable />
       <el-button type="primary" @click="loadData">查询</el-button>
     </div>
-    <el-table :data="filteredTables" @selection-change="handleSelect">
+    <el-table :data="pagedTables" @selection-change="handleSelect">
       <el-table-column type="selection" width="50" />
       <el-table-column prop="tableName" label="表名" width="200" />
       <el-table-column prop="tableComment" label="表注释" show-overflow-tooltip />
@@ -14,6 +14,17 @@
         </template>
       </el-table-column>
     </el-table>
+    <el-pagination
+      v-model:current-page="pageNo"
+      v-model:page-size="pageSize"
+      :total="filteredTables.length"
+      :page-sizes="[10, 20, 50]"
+      layout="total, sizes, prev, pager, next, jumper"
+      background
+      @size-change="handlePageChange"
+      @current-change="handlePageChange"
+      style="margin-top: 20px; justify-content: flex-end"
+    />
     <el-button type="primary" style="margin-top:10px" :disabled="selected.length===0" @click="generateCode">生成（{{ selected.length }}张表）</el-button>
 
     <el-dialog title="代码预览" v-model="previewVisible" width="70%" top="5vh">
@@ -42,6 +53,19 @@ const filteredTables = computed(() => {
   if (!searchForm.tableName) return tables.value
   return tables.value.filter(t => t.tableName.includes(searchForm.tableName))
 })
+
+const pageNo = ref(1)
+const pageSize = ref(10)
+
+const pagedTables = computed(() => {
+  const start = (pageNo.value - 1) * pageSize.value
+  return filteredTables.value.slice(start, start + pageSize.value)
+})
+
+function handlePageChange() {
+  const maxPage = Math.max(1, Math.ceil(filteredTables.value.length / pageSize.value))
+  if (pageNo.value > maxPage) pageNo.value = maxPage
+}
 
 const loadData = () => { api.post('/sys/gen/db/list').then(res => { tables.value = res }) }
 onMounted(loadData)

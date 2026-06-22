@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
+import com.cloudbase.common.core.domain.PageQuery;
 import com.cloudbase.common.core.domain.TableDataInfo;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.module.system.entity.SysMessage;
@@ -41,10 +42,7 @@ public class SysNoticeController {
     @Log(title = "通知公告管理", businessType = BusinessType.QUERY)
     @PostMapping("/page")
     public TableDataInfo page(@RequestBody Map<String, Object> params) {
-        int pageNo = params.containsKey("pageNo") ? Integer.parseInt(params.get("pageNo").toString()) : 1;
-        int pageSize = params.containsKey("pageSize") ? Integer.parseInt(params.get("pageSize").toString()) : 20;
-        pageNo = Math.max(pageNo, 1);
-        pageSize = Math.min(Math.max(pageSize, 1), 200);
+        var pageInfo = PageQuery.of(params);
 
         LambdaQueryWrapper<SysNotice> wrapper = new LambdaQueryWrapper<>();
         if (params.containsKey("noticeTitle")) {
@@ -52,7 +50,7 @@ public class SysNoticeController {
         }
         wrapper.orderByDesc(SysNotice::getCreateTime);
 
-        Page<SysNotice> page = noticeMapper.selectPage(new Page<>(pageNo, pageSize), wrapper);
+        Page<SysNotice> page = noticeMapper.selectPage(new Page<>(pageInfo.pageNo(), pageInfo.pageSize()), wrapper);
         return TableDataInfo.build(page.getRecords(), page.getTotal());
     }
 

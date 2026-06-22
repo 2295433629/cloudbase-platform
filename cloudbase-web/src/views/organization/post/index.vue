@@ -59,18 +59,20 @@
           </template>
         </el-table-column>
       </el-table>
-
-      <el-pagination
-        v-model:current-page="query.pageNo"
-        v-model:page-size="query.pageSize"
-        :total="total"
-        :page-sizes="[10, 20, 50, 100]"
-        layout="total, sizes, prev, pager, next"
-        @size-change="fetchData"
-        @current-change="fetchData"
-        style="margin-top: 20px; justify-content: flex-end"
-      />
     </el-card>
+
+    <el-pagination
+      v-model:current-page="query.pageNo"
+      v-model:page-size="query.pageSize"
+      :total="total"
+      :page-sizes="[10, 20, 50, 100]"
+      :hide-on-single-page="false"
+      layout="total, sizes, prev, pager, next, jumper"
+      background
+      @size-change="fetchData"
+      @current-change="fetchData"
+      style="margin-top: 16px; justify-content: flex-end"
+    />
 
     <!-- 新增/编辑弹窗 -->
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑岗位' : '新增岗位'" width="500px" destroy-on-close>
@@ -133,8 +135,8 @@ async function fetchData() {
   loading.value = true
   try {
     const res = await getPostPage(query)
-    tableData.value = res.rows
-    total.value = res.total
+    tableData.value = res.rows || []
+    total.value = Number(res.total) || 0
   } finally {
     loading.value = false
   }

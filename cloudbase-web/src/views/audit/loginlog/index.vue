@@ -12,6 +12,17 @@
             <el-option label="失败" :value="0" />
           </el-select>
         </el-form-item>
+        <el-form-item label="登录时间">
+          <el-date-picker
+            v-model="dateRange"
+            type="datetimerange"
+            range-separator="至"
+            start-placeholder="开始时间"
+            end-placeholder="结束时间"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            style="width: 360px"
+          />
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="fetchData">查询</el-button>
           <el-button @click="resetQuery">重置</el-button>
@@ -54,16 +65,19 @@
         <el-table-column prop="msg" label="消息" show-overflow-tooltip />
         <el-table-column prop="loginTime" label="登录时间" width="180" />
       </el-table>
-
-      <el-pagination
-        v-model:current-page="pageNo"
-        :page-size="20"
-        :total="total"
-        layout="total, prev, pager, next"
-        @current-change="fetchData"
-        style="margin-top: 20px; justify-content: flex-end"
-      />
     </el-card>
+    <el-pagination
+      v-model:current-page="pageNo"
+      v-model:page-size="pageSize"
+      :total="total"
+      :page-sizes="[20, 50, 100]"
+      :hide-on-single-page="false"
+      layout="total, sizes, prev, pager, next, jumper"
+      background
+      @size-change="fetchData"
+      @current-change="fetchData"
+      style="margin-top: 16px; justify-content: flex-end"
+    />
   </div>
 </template>
 
@@ -77,15 +91,22 @@ import {Delete, Download} from '@element-plus/icons-vue'
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const pageNo = ref(1)
+const pageSize = ref(20)
 const total = ref(0)
+const dateRange = ref<string[]>([])
 const query = reactive({ userName: '', status: undefined as number | undefined })
 
 async function fetchData() {
   loading.value = true
   try {
-    const res = await getLoginLogPage({ pageNo: pageNo.value, pageSize: 20, ...query })
+    const params: any = { pageNo: pageNo.value, pageSize: pageSize.value, ...query }
+    if (dateRange.value && dateRange.value.length === 2) {
+      params.beginTime = dateRange.value[0]
+      params.endTime = dateRange.value[1]
+    }
+    const res = await getLoginLogPage(params)
     tableData.value = res.rows || []
-    total.value = res.total
+    total.value = Number(res.total) || 0
   } catch {
     tableData.value = []
     total.value = 0
@@ -97,6 +118,7 @@ async function fetchData() {
 function resetQuery() {
   query.userName = ''
   query.status = undefined
+  dateRange.value = []
   pageNo.value = 1
   fetchData()
 }

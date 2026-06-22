@@ -68,8 +68,8 @@
           </template>
         </el-table-column>
       </el-table>
-      <el-pagination v-model:current-page="query.pageNo" v-model:page-size="query.pageSize" :total="total" :page-sizes="[10, 20, 50, 100]" layout="total, sizes, prev, pager, next" @size-change="fetchData" @current-change="fetchData" style="margin-top: 20px; justify-content: flex-end" />
     </el-card>
+    <el-pagination v-model:current-page="query.pageNo" v-model:page-size="query.pageSize" :total="total" :page-sizes="[10, 20, 50, 100]" :hide-on-single-page="false" layout="total, sizes, prev, pager, next, jumper" background @size-change="fetchData" @current-change="fetchData" style="margin-top: 16px; justify-content: flex-end" />
     <el-dialog v-model="dialogVisible" :title="isEdit ? '编辑角色' : '新增角色'" width="500px" destroy-on-close>
       <el-form :model="form" :rules="formRules" ref="formRef" label-width="90px">
         <el-form-item label="角色名称" prop="roleName"><el-input v-model="form.roleName" placeholder="请输入角色名称" /></el-form-item>
@@ -143,7 +143,7 @@ const formRef = ref<FormInstance>()
 const form = reactive({ roleId: undefined as number | string | undefined, roleName: '', roleCode: '', dataScope: 1, sort: 0, status: 1, remark: '' })
 const formRules: FormRules = { roleName: [{ required: true, message: '请输入角色名称', trigger: 'blur' }], roleCode: [{ required: true, message: '请输入角色编码', trigger: 'blur' }] }
 
-async function fetchData() { loading.value = true; try { const res = await getRolePage(query); tableData.value = res.rows; total.value = res.total } finally { loading.value = false } }
+async function fetchData() { loading.value = true; try { const res = await getRolePage(query); tableData.value = res.rows || []; total.value = Number(res.total) || 0 } finally { loading.value = false } }
 function resetQuery() { query.roleName = ''; query.roleCode = ''; query.status = undefined; query.pageNo = 1; fetchData() }
 function handleAdd() { isEdit.value = false; Object.assign(form, { roleId: null, roleName: '', roleCode: '', dataScope: 1, sort: 0, status: 1, remark: '' }); dialogVisible.value = true }
 function handleEdit(row: any) { isEdit.value = true; Object.assign(form, { roleId: row.roleId, roleName: row.roleName, roleCode: row.roleCode, dataScope: row.dataScope, sort: row.sort, status: row.status, remark: row.remark || '' }); dialogVisible.value = true }

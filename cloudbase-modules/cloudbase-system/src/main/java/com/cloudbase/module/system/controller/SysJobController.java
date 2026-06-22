@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
+import com.cloudbase.common.core.domain.PageQuery;
 import com.cloudbase.common.core.domain.TableDataInfo;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.module.system.entity.SysJob;
@@ -41,13 +42,10 @@ public class SysJobController {
     @Log(title = "定时任务管理", businessType = BusinessType.QUERY)
     @PostMapping("/page")
     public TableDataInfo page(@RequestBody Map<String, Object> params) {
-        int pageNo = params.containsKey("pageNo") ? Integer.parseInt(params.get("pageNo").toString()) : 1;
-        int pageSize = params.containsKey("pageSize") ? Integer.parseInt(params.get("pageSize").toString()) : 20;
-        pageNo = Math.max(pageNo, 1);
-        pageSize = Math.min(Math.max(pageSize, 1), 200);
+        var pageInfo = PageQuery.of(params);
 
         Page<SysJob> page = sysJobService.page(
-                new Page<>(pageNo, pageSize),
+                new Page<>(pageInfo.pageNo(), pageInfo.pageSize()),
                 new LambdaQueryWrapper<SysJob>()
                         .like(params.containsKey("jobName") && params.get("jobName") != null
                                 && !params.get("jobName").toString().isEmpty(),
@@ -133,13 +131,10 @@ public class SysJobController {
     @Log(title = "定时任务管理", businessType = BusinessType.QUERY)
     @PostMapping("/log/page")
     public TableDataInfo logPage(@RequestBody Map<String, Object> params) {
-        int pageNo = params.containsKey("pageNo") ? Integer.parseInt(params.get("pageNo").toString()) : 1;
-        int pageSize = params.containsKey("pageSize") ? Integer.parseInt(params.get("pageSize").toString()) : 20;
-        pageNo = Math.max(pageNo, 1);
-        pageSize = Math.min(Math.max(pageSize, 1), 200);
+        var pageInfo = PageQuery.of(params, 10);
 
         Page<SysJobLog> page = sysJobLogMapper.selectPage(
-                new Page<>(pageNo, pageSize),
+                new Page<>(pageInfo.pageNo(), pageInfo.pageSize()),
                 new LambdaQueryWrapper<SysJobLog>().orderByDesc(SysJobLog::getStartTime)
         );
         return TableDataInfo.build(page.getRecords(), page.getTotal());

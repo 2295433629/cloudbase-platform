@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
+import com.cloudbase.common.core.domain.PageQuery;
 import com.cloudbase.common.core.domain.TableDataInfo;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.module.system.entity.SysPost;
@@ -38,8 +39,7 @@ public class SysPostController {
     @Log(title = "岗位管理", businessType = BusinessType.QUERY)
     @PostMapping("/page")
     public TableDataInfo page(@RequestBody Map<String, Object> params) {
-        int pageNo = params.get("pageNo") != null ? Integer.parseInt(params.get("pageNo").toString()) : 1;
-        int pageSize = params.get("pageSize") != null ? Integer.parseInt(params.get("pageSize").toString()) : 20;
+        var pageInfo = PageQuery.of(params);
         String postName = params.get("postName") != null ? params.get("postName").toString() : null;
 
         LambdaQueryWrapper<SysPost> wrapper = new LambdaQueryWrapper<>();
@@ -51,7 +51,7 @@ public class SysPostController {
         }
         wrapper.orderByAsc(SysPost::getSort);
 
-        Page<SysPost> page = postService.page(new Page<>(pageNo, pageSize), wrapper);
+        Page<SysPost> page = postService.page(new Page<>(pageInfo.pageNo(), pageInfo.pageSize()), wrapper);
         return TableDataInfo.build(page.getRecords(), page.getTotal());
     }
 

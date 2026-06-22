@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
+import com.cloudbase.common.core.domain.PageQuery;
 import com.cloudbase.common.core.domain.TableDataInfo;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.common.web.cache.CacheService;
@@ -40,10 +41,7 @@ public class SysConfigController {
     @Log(title = "参数配置管理", businessType = BusinessType.QUERY)
     @PostMapping("/page")
     public TableDataInfo page(@RequestBody Map<String, Object> params) {
-        int pageNo = params.containsKey("pageNo") ? Integer.parseInt(params.get("pageNo").toString()) : 1;
-        int pageSize = params.containsKey("pageSize") ? Integer.parseInt(params.get("pageSize").toString()) : 20;
-        pageNo = Math.max(pageNo, 1);
-        pageSize = Math.min(Math.max(pageSize, 1), 200);
+        var pageInfo = PageQuery.of(params);
 
         LambdaQueryWrapper<SysConfig> wrapper = new LambdaQueryWrapper<>();
         if (params.containsKey("configName")) {
@@ -51,7 +49,7 @@ public class SysConfigController {
         }
         wrapper.orderByAsc(SysConfig::getConfigId);
 
-        Page<SysConfig> page = configMapper.selectPage(new Page<>(pageNo, pageSize), wrapper);
+        Page<SysConfig> page = configMapper.selectPage(new Page<>(pageInfo.pageNo(), pageInfo.pageSize()), wrapper);
         return TableDataInfo.build(page.getRecords(), page.getTotal());
     }
 

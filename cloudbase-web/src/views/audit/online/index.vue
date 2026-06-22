@@ -15,7 +15,7 @@
           </div>
         </div>
       </template>
-      <el-table :data="tableData" stripe v-loading="loading">
+      <el-table :data="pagedData" stripe v-loading="loading">
         <el-table-column type="index" label="#" width="55" align="center" />
         <el-table-column prop="realName" label="用户名称" min-width="120" show-overflow-tooltip />
         <el-table-column prop="account" label="账号" min-width="120" show-overflow-tooltip />
@@ -42,18 +42,42 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-pagination
+        v-model:current-page="pageNo"
+        v-model:page-size="pageSize"
+        :total="tableData.length"
+        :page-sizes="[10, 20, 50]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+        @size-change="handlePageChange"
+        @current-change="handlePageChange"
+        style="margin-top: 20px; justify-content: flex-end"
+      />
     </el-card>
   </div>
 </template>
 
 <script setup>
-import {onMounted, ref} from 'vue'
+import {computed, onMounted, ref} from 'vue'
 import {ElMessage} from 'element-plus'
 import {Refresh, User} from '@element-plus/icons-vue'
 import api from '@/api'
 
 const loading = ref(false)
 const tableData = ref([])
+const pageNo = ref(1)
+const pageSize = ref(10)
+
+const pagedData = computed(() => {
+  const start = (pageNo.value - 1) * pageSize.value
+  return tableData.value.slice(start, start + pageSize.value)
+})
+
+function handlePageChange() {
+  // 当页码或每页条数变化时，确保不超出数据范围
+  const maxPage = Math.max(1, Math.ceil(tableData.value.length / pageSize.value))
+  if (pageNo.value > maxPage) pageNo.value = maxPage
+}
 
 async function fetchData() {
   loading.value = true

@@ -26,7 +26,7 @@
         </template>
       </el-alert>
 
-      <el-table :data="roleData" stripe v-loading="loading">
+      <el-table :data="pagedData" stripe v-loading="loading">
         <el-table-column prop="roleName" label="角色名称" width="150" />
         <el-table-column prop="roleCode" label="角色编码" width="150" />
         <el-table-column label="数据权限范围" width="200">
@@ -49,6 +49,17 @@
           </template>
         </el-table-column>
       </el-table>
+      <el-pagination
+        v-model:current-page="pageNo"
+        v-model:page-size="pageSize"
+        :total="roleData.length"
+        :page-sizes="[10, 20, 50]"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+        @size-change="handlePageChange"
+        @current-change="handlePageChange"
+        style="margin-top: 20px; justify-content: flex-end"
+      />
     </el-card>
 
     <!-- 配置弹窗 -->
@@ -76,7 +87,7 @@
 </template>
 
 <script setup lang="ts">
-import {onMounted, reactive, ref} from 'vue'
+import {computed, onMounted, reactive, ref} from 'vue'
 import {getRoleList} from '@/api/system'
 import {ElMessage} from 'element-plus'
 import api from '@/api'
@@ -86,6 +97,18 @@ const dataScopeTag = (scope: number) => ['', '', 'warning', 'info', 'success', '
 
 const loading = ref(false)
 const roleData = ref<any[]>([])
+const pageNo = ref(1)
+const pageSize = ref(10)
+
+const pagedData = computed(() => {
+  const start = (pageNo.value - 1) * pageSize.value
+  return roleData.value.slice(start, start + pageSize.value)
+})
+
+function handlePageChange() {
+  const maxPage = Math.max(1, Math.ceil(roleData.value.length / pageSize.value))
+  if (pageNo.value > maxPage) pageNo.value = maxPage
+}
 const dialogVisible = ref(false)
 const currentRole = reactive({ roleId: 0, roleName: '', roleCode: '', dataScope: 1 })
 

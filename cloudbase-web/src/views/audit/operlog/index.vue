@@ -11,6 +11,17 @@
           </el-select>
         </el-form-item>
         <el-form-item label="状态"><el-select v-model="query.status" placeholder="全部" clearable style="width: 100px"><el-option label="成功" :value="1" /><el-option label="失败" :value="0" /></el-select></el-form-item>
+        <el-form-item label="操作时间">
+          <el-date-picker
+            v-model="dateRange"
+            type="datetimerange"
+            range-separator="至"
+            start-placeholder="开始时间"
+            end-placeholder="结束时间"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            style="width: 360px"
+          />
+        </el-form-item>
         <el-form-item><el-button type="primary" @click="fetchData">查询</el-button><el-button @click="resetQuery">重置</el-button></el-form-item>
       </el-form>
     </el-card>
@@ -27,8 +38,19 @@
         <el-table-column label="状态" width="80" align="center"><template #default="{ row }"><el-tag :type="row.success === 1 || row.status === 1 ? 'success' : 'danger'" size="small">{{ (row.success === 1 || row.status === 1) ? '成功' : '失败' }}</el-tag></template></el-table-column>
         <el-table-column prop="operTime" label="操作时间" width="180" />
       </el-table>
-      <el-pagination v-model:current-page="query.pageNo" v-model:page-size="query.pageSize" :total="total" :page-sizes="[20, 50, 100]" layout="total, sizes, prev, pager, next" @size-change="fetchData" @current-change="fetchData" style="margin-top: 20px; justify-content: flex-end" />
     </el-card>
+    <el-pagination
+      v-model:current-page="query.pageNo"
+      v-model:page-size="query.pageSize"
+      :total="total"
+      :page-sizes="[20, 50, 100]"
+      :hide-on-single-page="false"
+      layout="total, sizes, prev, pager, next, jumper"
+      background
+      @size-change="fetchData"
+      @current-change="fetchData"
+      style="margin-top: 16px; justify-content: flex-end"
+    />
   </div>
 </template>
 
@@ -42,13 +64,47 @@ import {Delete, Download} from '@element-plus/icons-vue'
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const total = ref(0)
+const dateRange = ref<string[]>([])
 const query = reactive({ module: '', operUserName: '', operType: '', status: null as number | null, pageNo: 1, pageSize: 20 })
 const operTypeTag = (type: string) => ({ INSERT: 'primary', UPDATE: 'warning', DELETE: 'danger', QUERY: 'info', EXPORT: 'success', GRANT: 'success', OTHER: 'info' }[type] || 'info')
 
-async function fetchData() { loading.value = true; try { const res = await getOperLogPage(query); tableData.value = res.rows; total.value = res.total } finally { loading.value = false } }
-function resetQuery() { query.module = ''; query.operUserName = ''; query.operType = ''; query.status = null; query.pageNo = 1; fetchData() }
+async function fetchData() {
+  loading.value = true
+  try {
+    const params: any = { ...query }
+    if (dateRange.value && dateRange.value.length === 2) {
+      params.beginTime = dateRange.value[0]
+      params.endTime = dateRange.value[1]
+    }
+    const res = await getOperLogPage(params)
+    tableData.value = res.rows || []
+    total.value = Number(res.total) || 0
+    console.log('[operLog] rows:', tableData.value.length, 'total:', total.value)
+  } finally { loading.value = false }
+}
+
+function resetQuery() {
+  query.module = ''; query.operUserName = ''; query.operType = ''; query.status = null; query.pageNo = 1
+  dateRange.value = []
+  fetchData()
+}
+
 async function handleClear() { await ElMessageBox.confirm('确认清空所有操作日志？此操作不可恢复。', '警告', { type: 'warning' }); await clearOperLog(); ElMessage.success('已清空'); fetchData() }
-function handleExport() { const exportData = tableData.value.map((row: any) => ({ '模块': row.module, '操作类型': row.operType, '请求方法': row.method || '', '操作人': row.operUserName, 'IP地址': row.operIp, '耗时(ms)': row.costTime, '状态': (row.success === 1 || row.status === 1) ? '成功' : '失败', '操作时间': row.operTime })); const ws = XLSX.utils.json_to_sheet(exportData); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '操作日志'); ws['!cols'] = [{ wch: 15 }, { wch: 12 }, { wch: 30 }, { wch: 12 }, { wch: 18 }, { wch: 10 }, { wch: 8 }, { wch: 20 }]; XLSX.writeFile(wb, `操作日志_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`); ElMessage.success('导出成功') }
+
+function handleExport() {
+  const exportData = tableData.value.map((row: any) => ({
+    '模块': row.module, '操作类型': row.operType, '请求方法': row.method || '',
+    '操作人': row.operUserName, 'IP地址': row.operIp, '耗时(ms)': row.costTime,
+    '状态': (row.success === 1 || row.status === 1) ? '成功' : '失败', '操作时间': row.operTime
+  }))
+  const ws = XLSX.utils.json_to_sheet(exportData)
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, '操作日志')
+  ws['!cols'] = [{ wch: 15 }, { wch: 12 }, { wch: 30 }, { wch: 12 }, { wch: 18 }, { wch: 10 }, { wch: 8 }, { wch: 20 }]
+  XLSX.writeFile(wb, `操作日志_${new Date().toLocaleDateString().replace(/\//g, '-')}.xlsx`)
+  ElMessage.success('导出成功')
+}
+
 onMounted(() => { fetchData() })
 </script>
 

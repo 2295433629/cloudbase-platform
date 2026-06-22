@@ -55,18 +55,20 @@
         </el-table-column>
         <el-table-column prop="createTime" label="发布时间" width="180" />
       </el-table>
-
-      <el-pagination
-        v-model:current-page="query.pageNo"
-        v-model:page-size="query.pageSize"
-        :total="total"
-        :page-sizes="[10, 20, 50]"
-        layout="total, sizes, prev, pager, next"
-        @size-change="fetchData"
-        @current-change="fetchData"
-        style="margin-top: 20px; justify-content: flex-end"
-      />
     </el-card>
+
+    <el-pagination
+      v-model:current-page="query.pageNo"
+      v-model:page-size="query.pageSize"
+      :total="total"
+      :page-sizes="[10, 20, 50]"
+      :hide-on-single-page="false"
+      layout="total, sizes, prev, pager, next, jumper"
+      background
+      @size-change="fetchData"
+      @current-change="fetchData"
+      style="margin-top: 16px; justify-content: flex-end"
+    />
 
     <!-- 消息详情弹窗 -->
     <el-dialog v-model="detailVisible" :title="currentMsg?.title || '消息详情'" width="700px" destroy-on-close>
@@ -112,8 +114,8 @@ async function fetchData() {
   loading.value = true
   try {
     const res = await getMessagePage(query)
-    tableData.value = res.rows
-    total.value = res.total
+    tableData.value = res.rows || []
+    total.value = Number(res.total) || 0
   } catch {
     tableData.value = []
     total.value = 0

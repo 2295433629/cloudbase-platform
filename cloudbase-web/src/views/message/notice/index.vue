@@ -24,7 +24,7 @@
         </template>
       </el-table-column>
     </el-table>
-    <el-pagination v-model:current-page="pageNo" :page-size="20" :total="total" layout="total, prev, pager, next" @current-change="loadData" />
+    <el-pagination v-model:current-page="pageNo" v-model:page-size="pageSize" :total="total" :page-sizes="[10, 20, 50]" :hide-on-single-page="false" layout="total, sizes, prev, pager, next, jumper" background @size-change="loadData" @current-change="loadData" style="margin-top: 16px; justify-content: flex-end" />
 
     <el-dialog :title="dialogTitle" v-model="dialogVisible" width="600px">
       <el-form v-if="!viewMode" :model="form" label-width="80px">
@@ -53,6 +53,7 @@ import api from '@/api'
 
 const tableData = ref([])
 const pageNo = ref(1)
+const pageSize = ref(20)
 const total = ref(0)
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
@@ -61,8 +62,8 @@ const form = reactive({ noticeId: null, noticeTitle: '', noticeType: 1, noticeCo
 const searchForm = reactive({ noticeTitle: '' })
 
 const loadData = () => {
-  api.post('/sys/notice/page', { pageNo: pageNo.value, pageSize: 20, ...searchForm }).then(res => {
-    tableData.value = res.rows; total.value = res.total
+  api.post('/sys/notice/page', { pageNo: pageNo.value, pageSize: pageSize.value, ...searchForm }).then(res => {
+    tableData.value = res.rows || []; total.value = Number(res.total) || 0
   })
 }
 loadData()

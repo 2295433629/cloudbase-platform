@@ -3,7 +3,9 @@ import {fetchDynamicRoutes} from './dynamic'
 import {useUserStore} from '@/stores/user'
 
 /**
- * catch-all 通配路由（单独提取，便于动态路由加载后重新注册以确保最低优先级）
+ * catch-all 通配路由
+ * 不在 staticRoutes 中注册！仅在动态路由加载完成后动态添加，
+ * 彻底避免刷新时 catch-all 抢先匹配动态路由路径导致 404。
  */
 const catchAllRoute: RouteRecordRaw = {
   path: '/:pathMatch(.*)*',
@@ -51,9 +53,7 @@ export const staticRoutes: RouteRecordRaw[] = [
     name: 'ServerError',
     component: () => import('@/views/error/500.vue'),
     meta: { title: '服务器错误' }
-  },
-  // 通配符（所有未匹配的路由 → 404）
-  catchAllRoute
+  }
 ]
 
 const router = createRouter({
@@ -100,27 +100,27 @@ router.beforeEach(async (to, _from, next) => {
         await userStore.fetchPermissions()
       }
       const routes = await fetchDynamicRoutes()
-      // 关键：先移除 catch-all 通配路由，避免它在 Vue Router 4.5+ 内部排序中
-      // 优先于后添加的动态子路由被匹配到（这是 Vue Router 4 的已知行为）
-      if (router.hasRoute('NotFoundRedirect')) {
-        router.removeRoute('NotFoundRedirect')
-      }
       // 将所有动态路由注册到 Layout 下
       routes.forEach(route => router.addRoute('Layout', route))
-      // 重新添加 catch-all，确保它在路由匹配器中处于最低优先级
-      router.addRoute(catchAllRoute)
-      dynamicRoutesLoaded = true
       console.log(`[router] 动态路由加载完成，共注册 ${routes.length} 条路由`)
-      next({ ...to, replace: true })
     } catch (e) {
       console.warn('加载动态路由失败', e)
-      dynamicRoutesLoaded = true
-      next('/403')
     }
+
+    // 无论成功与否，都注册 catch-all（确保未知路径能匹配到 404）
+    // catch-all 只在此处注册，不在 staticRoutes 中，
+    // 保证它永远在动态路由之后才被匹配
+    if (!router.hasRoute('NotFoundRedirect')) {
+      router.addRoute(catchAllRoute)
+    }
+    dynamicRoutesLoaded = true
+
+    // 用 path 重新导航，触发路由重新匹配（此时动态路由已注册）
+    next({ path: to.fullPath, replace: true })
     return
   }
 
-  // 动态路由已加载完毕，若当前仍命中 catch-all 说明页面不存在
+  // 动态路由已加载完毕，若当前仍命中 catch-all 说明页面确实不存在
   if (dynamicRoutesLoaded && to.name === 'NotFoundRedirect') {
     next({ path: '/404', replace: true })
     return

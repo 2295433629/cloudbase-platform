@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
+import com.cloudbase.common.core.domain.PageQuery;
 import com.cloudbase.common.core.domain.TableDataInfo;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.module.system.entity.SysOperLog;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 /**
@@ -34,10 +37,7 @@ public class SysOperLogController {
     @Log(title = "操作日志管理", businessType = BusinessType.QUERY)
     @PostMapping("/page")
     public TableDataInfo page(@RequestBody Map<String, Object> params) {
-        int pageNo = params.containsKey("pageNo") ? Integer.parseInt(params.get("pageNo").toString()) : 1;
-        int pageSize = params.containsKey("pageSize") ? Integer.parseInt(params.get("pageSize").toString()) : 20;
-        pageNo = Math.max(pageNo, 1);
-        pageSize = Math.min(Math.max(pageSize, 1), 200);
+        var pageInfo = PageQuery.of(params);
 
         LambdaQueryWrapper<SysOperLog> wrapper = new LambdaQueryWrapper<>();
         if (params.containsKey("module")) {
@@ -53,9 +53,22 @@ public class SysOperLogController {
         if (params.containsKey("status") && params.get("status") != null) {
             wrapper.eq(SysOperLog::getSuccess, Integer.parseInt(params.get("status").toString()));
         }
+        // 时间范围过滤
+        if (params.containsKey("beginTime") && params.get("beginTime") != null
+                && !params.get("beginTime").toString().isEmpty()) {
+            wrapper.ge(SysOperLog::getOperTime,
+                    LocalDateTime.parse(params.get("beginTime").toString(),
+                            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        }
+        if (params.containsKey("endTime") && params.get("endTime") != null
+                && !params.get("endTime").toString().isEmpty()) {
+            wrapper.le(SysOperLog::getOperTime,
+                    LocalDateTime.parse(params.get("endTime").toString(),
+                            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        }
         wrapper.orderByDesc(SysOperLog::getOperTime);
 
-        Page<SysOperLog> page = operLogMapper.selectPage(new Page<>(pageNo, pageSize), wrapper);
+        Page<SysOperLog> page = operLogMapper.selectPage(new Page<>(pageInfo.pageNo(), pageInfo.pageSize()), wrapper);
         return TableDataInfo.build(page.getRecords(), page.getTotal());
     }
 
@@ -65,10 +78,7 @@ public class SysOperLogController {
     @Log(title = "操作日志管理", businessType = BusinessType.QUERY)
     @PostMapping("/recent")
     public TableDataInfo recent(@RequestBody Map<String, Object> params) {
-        int pageNo = params.containsKey("pageNo") ? Integer.parseInt(params.get("pageNo").toString()) : 1;
-        int pageSize = params.containsKey("pageSize") ? Integer.parseInt(params.get("pageSize").toString()) : 5;
-        pageNo = Math.max(pageNo, 1);
-        pageSize = Math.min(Math.max(pageSize, 1), 50);
+        var pageInfo = PageQuery.of(params, 5);
 
         LambdaQueryWrapper<SysOperLog> wrapper = new LambdaQueryWrapper<>();
         if (params.containsKey("module")) {
@@ -76,7 +86,7 @@ public class SysOperLogController {
         }
         wrapper.orderByDesc(SysOperLog::getOperTime);
 
-        Page<SysOperLog> page = operLogMapper.selectPage(new Page<>(pageNo, pageSize), wrapper);
+        Page<SysOperLog> page = operLogMapper.selectPage(new Page<>(pageInfo.pageNo(), pageInfo.pageSize()), wrapper);
         return TableDataInfo.build(page.getRecords(), page.getTotal());
     }
 
