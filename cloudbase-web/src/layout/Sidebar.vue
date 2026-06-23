@@ -125,12 +125,13 @@
 </template>
 
 <script setup lang="ts">
-import {computed, onMounted, reactive, ref} from 'vue'
+import {computed, onMounted, reactive, ref, watch} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import {useUserStore} from '@/stores/user'
+import {useAppStore} from '@/stores/app'
 import {resetDynamicRoutes} from '@/router'
 import {getUserMenuTree} from '@/api/system'
-import {changePassword, getProfile, updateProfile} from '@/api/auth'
+import {changePassword, getProfile, logoutApi, updateProfile} from '@/api/auth'
 import * as icons from '@element-plus/icons-vue'
 import {ArrowDown, Expand, Fold, Lock, SwitchButton, User} from '@element-plus/icons-vue'
 import type {FormInstance, FormRules} from 'element-plus'
@@ -140,6 +141,7 @@ import type {SysMenu} from '@/types/system'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const appStore = useAppStore()
 const activeMenu = computed(() => route.path)
 
 defineProps<{ collapse?: boolean }>()
@@ -148,11 +150,24 @@ defineEmits<{ toggleCollapse: [] }>()
 // ==================== 菜单 ====================
 const menuTree = ref<SysMenu[]>([])
 
-onMounted(async () => {
+async function loadMenuTree() {
   try {
     menuTree.value = await getUserMenuTree()
   } catch (e) {
     console.warn('加载菜单失败', e)
+  }
+}
+
+onMounted(() => {
+  loadMenuTree()
+})
+
+// 监听 token 变化（切换账号），重新加载菜单树
+watch(() => userStore.token, (newToken, oldToken) => {
+  if (newToken && newToken !== oldToken) {
+    loadMenuTree()
+  } else if (!newToken) {
+    menuTree.value = []
   }
 })
 
@@ -175,10 +190,22 @@ function getIcon(name: string) {
 }
 
 // ==================== 用户下拉 ====================
-function handleCommand(command: string) {
+async function handleCommand(command: string) {
   if (command === 'logout') {
+    // 先调用后端注销接口，清除服务端缓存中的 token（使在线用户列表同步更新）
+    const token = localStorage.getItem('token')
+    if (token) {
+      try {
+        await logoutApi({ token })
+      } catch {
+        // 即使接口失败也继续执行前端清理，避免用户卡死在页面上
+      }
+    }
     userStore.logout()
     resetDynamicRoutes()
+    // 清理标签页和面包屑，避免切换账号后残留上一个用户的会话数据
+    appStore.closeAllTabs()
+    appStore.setBreadcrumbs([])
     router.push('/login')
   } else if (command === 'profile') {
     openProfile()
@@ -264,8 +291,15 @@ async function savePassword() {
     await changePassword({ oldPassword: pwdForm.oldPassword, newPassword: pwdForm.newPassword })
     ElMessage.success('密码修改成功，请重新登录')
     pwdVisible.value = false
+    // 修改密码后需注销当前会话，清除服务端缓存
+    const token = localStorage.getItem('token')
+    if (token) {
+      try { await logoutApi({ token }) } catch { /* 忽略 */ }
+    }
     userStore.logout()
     resetDynamicRoutes()
+    appStore.closeAllTabs()
+    appStore.setBreadcrumbs([])
     router.push('/login')
   } catch { /* request拦截器已处理错误提示 */ }
   pwdLoading.value = false

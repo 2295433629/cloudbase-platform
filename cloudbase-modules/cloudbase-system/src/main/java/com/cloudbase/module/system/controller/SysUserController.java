@@ -3,6 +3,8 @@ package com.cloudbase.module.system.controller;
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
 import com.cloudbase.common.core.domain.TableDataInfo;
+import com.cloudbase.common.core.exception.BusinessException;
+import com.cloudbase.common.core.exception.CommonExceptionEnum;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.module.system.entity.SysUser;
 import com.cloudbase.module.system.model.dto.AssignRolesDTO;
@@ -13,6 +15,7 @@ import com.cloudbase.module.system.model.dto.UserUpdateDTO;
 import com.cloudbase.module.system.service.ISysUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * 用户管理（重构后使用DTO+Service）
  */
+@Slf4j
 @Validated
 @RestController
 @RequestMapping("/sys/user")
@@ -97,14 +101,16 @@ public class SysUserController {
         @SuppressWarnings("unchecked")
         java.util.List<Object> ids = (java.util.List<Object>) params.get("ids");
         if (ids == null || ids.isEmpty()) {
-            return AjaxResult.error("请选择要删除的用户");
+            throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "请选择要删除的用户");
         }
         int successCount = 0;
         for (Object id : ids) {
             try {
                 sysUserService.deleteUser(Long.parseLong(id.toString()));
                 successCount++;
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                log.warn("批量删除用户失败: id={}, error={}", id, e.getMessage());
+            }
         }
         return AjaxResult.success("成功删除 " + successCount + " 个用户");
     }
@@ -149,7 +155,7 @@ public class SysUserController {
         Long userId = Long.parseLong(params.get("userId").toString());
         String newPassword = params.get("newPassword").toString();
         if (newPassword == null || newPassword.length() < 6) {
-            return AjaxResult.error("密码长度不能少于6位");
+            throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "密码长度不能少于6位");
         }
         sysUserService.resetPassword(userId, newPassword);
         return AjaxResult.success();

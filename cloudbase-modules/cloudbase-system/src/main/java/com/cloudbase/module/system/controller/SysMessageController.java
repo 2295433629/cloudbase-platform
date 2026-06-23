@@ -5,6 +5,8 @@ import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
 import com.cloudbase.common.core.domain.PageQuery;
 import com.cloudbase.common.core.domain.TableDataInfo;
+import com.cloudbase.common.core.exception.BusinessException;
+import com.cloudbase.common.core.exception.CommonExceptionEnum;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.common.web.auth.UserContext;
 import com.cloudbase.module.system.entity.SysMessage;
@@ -71,10 +73,10 @@ public class SysMessageController {
         if (msgId == null && body != null && body.containsKey("id")) {
             msgId = Long.parseLong(body.get("id").toString());
         }
-        if (msgId == null) return AjaxResult.error("缺少消息ID");
+        if (msgId == null) throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "缺少消息ID");
         SysMessage message = messageMapper.selectById(msgId);
         if (message == null) {
-            return AjaxResult.error("消息不存在");
+            throw new BusinessException(CommonExceptionEnum.DATA_NOT_FOUND.getErrorCode(), "消息不存在");
         }
         // 同时标记已读
         Long userId = UserContext.getUserId();
@@ -90,7 +92,9 @@ public class SysMessageController {
     @PostMapping("/read")
     public AjaxResult read(@RequestBody Map<String, Object> params) {
         Long userId = UserContext.getUserId();
-        if (userId == null) return AjaxResult.error("未登录");
+        if (userId == null) {
+            throw new BusinessException(CommonExceptionEnum.NOT_LOGIN);
+        }
         Long messageId = Long.parseLong(params.get("messageId").toString());
         messageMapper.markRead(messageId, userId);
         return AjaxResult.success();
@@ -102,7 +106,9 @@ public class SysMessageController {
     @PostMapping("/readAll")
     public AjaxResult readAll() {
         Long userId = UserContext.getUserId();
-        if (userId == null) return AjaxResult.error("未登录");
+        if (userId == null) {
+            throw new BusinessException(CommonExceptionEnum.NOT_LOGIN);
+        }
         messageMapper.markAllRead(userId);
         return AjaxResult.success();
     }

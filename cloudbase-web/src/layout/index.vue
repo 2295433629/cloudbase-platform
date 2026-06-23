@@ -31,9 +31,9 @@
             </el-icon>
           </el-tooltip>
           <!-- 全屏 -->
-          <el-tooltip content="全屏" placement="bottom">
+          <el-tooltip :content="isFullscreen ? '退出全屏' : '全屏'" placement="bottom">
             <el-icon class="header-action-icon" @click="toggleFullscreen">
-              <component :is="isFullscreen ? 'FullScreen' : 'FullScreen'" />
+              <FullScreen />
             </el-icon>
           </el-tooltip>
         </div>

@@ -6,6 +6,8 @@ import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
 import com.cloudbase.common.core.domain.PageQuery;
 import com.cloudbase.common.core.domain.TableDataInfo;
+import com.cloudbase.common.core.exception.BusinessException;
+import com.cloudbase.common.core.exception.CommonExceptionEnum;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.common.web.cache.CacheService;
 import com.cloudbase.module.system.entity.SysConfig;
@@ -61,7 +63,7 @@ public class SysConfigController {
     public AjaxResult getByKey(@RequestBody Map<String, String> params) {
         String key = params.get("configKey");
         if (key == null || key.isEmpty()) {
-            return AjaxResult.error("参数configKey不能为空");
+            throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "参数configKey不能为空");
         }
         String cached = cacheService.get("sys:config:" + key);
         if (cached != null) {
@@ -102,7 +104,7 @@ public class SysConfigController {
     public AjaxResult edit(@Valid @RequestBody ConfigUpdateDTO dto) {
         SysConfig oldConfig = configMapper.selectById(dto.getConfigId());
         if (oldConfig == null) {
-            return AjaxResult.error("参数不存在");
+            throw new BusinessException(CommonExceptionEnum.DATA_NOT_FOUND.getErrorCode(), "参数不存在");
         }
         SysConfig config = new SysConfig();
         config.setConfigId(dto.getConfigId());

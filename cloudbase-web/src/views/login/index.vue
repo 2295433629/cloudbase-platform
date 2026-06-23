@@ -69,10 +69,11 @@ const formRef = ref()
 const loading = ref(false)
 const captchaImage = ref('')
 const captchaUuid = ref('')
-const rememberMe = ref(false)
+const savedAccount = localStorage.getItem('rememberAccount')
+const rememberMe = ref(!!savedAccount)
 
 const form = reactive({
-  account: 'admin',
+  account: savedAccount || 'admin',
   password: '',
   captcha: ''
 })
@@ -126,6 +127,12 @@ async function handleLogin() {
   loading.value = true
   try {
     await userStore.login(form.account, form.password, captchaUuid.value, form.captcha)
+    // 记住我：保存账号到 localStorage；未勾选则清除
+    if (rememberMe.value) {
+      localStorage.setItem('rememberAccount', form.account)
+    } else {
+      localStorage.removeItem('rememberAccount')
+    }
     ElMessage.success('登录成功')
     await router.push('/dashboard')
   } catch {

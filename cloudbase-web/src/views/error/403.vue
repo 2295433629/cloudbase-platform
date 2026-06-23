@@ -13,10 +13,12 @@
 
 <script setup lang="ts">
 import {useRoute, useRouter} from 'vue-router'
+import {useAppStore} from '@/stores/app'
 import {resetDynamicRoutes} from '@/router'
 
 const route = useRoute()
 const router = useRouter()
+const appStore = useAppStore()
 
 const message = route.query?.message || '请联系管理员分配相应权限'
 
@@ -34,6 +36,8 @@ function reLogin(): void {
   localStorage.removeItem('permissions')
   localStorage.removeItem('roleCodes')
   resetDynamicRoutes()
+  appStore.closeAllTabs()
+  appStore.setBreadcrumbs([])
   router.push('/login')
 }
 </script>

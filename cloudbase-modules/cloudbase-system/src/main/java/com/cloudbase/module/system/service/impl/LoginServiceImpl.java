@@ -123,6 +123,10 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public void logout(String token) {
+        if (token == null || token.isBlank()) {
+            log.warn("用户退出登录: token为空，忽略");
+            return;
+        }
         cacheService.delete("login_tokens:" + token);
         log.info("用户已退出登录, token={}...",
                 token.substring(0, Math.min(20, token.length())));

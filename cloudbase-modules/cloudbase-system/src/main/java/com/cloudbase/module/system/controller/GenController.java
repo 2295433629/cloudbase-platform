@@ -5,6 +5,8 @@ import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
 import com.cloudbase.common.core.domain.PageQuery;
 import com.cloudbase.common.core.domain.TableDataInfo;
+import com.cloudbase.common.core.exception.BusinessException;
+import com.cloudbase.common.core.exception.CommonExceptionEnum;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.module.system.entity.GenTable;
 import com.cloudbase.module.system.service.IGenService;
@@ -62,7 +64,7 @@ public class GenController {
         @SuppressWarnings("unchecked")
         List<String> tableNames = (List<String>) param.get("tableNames");
         if (tableNames == null || tableNames.isEmpty()) {
-            return AjaxResult.error("请选择要导入的表");
+            throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "请选择要导入的表");
         }
         genService.importTables(tableNames);
         return AjaxResult.success("成功导入 " + tableNames.size() + " 张表");
@@ -88,7 +90,7 @@ public class GenController {
     public AjaxResult detail(@RequestBody Map<String, Long> param) {
         Long tableId = param.get("tableId");
         if (tableId == null) {
-            return AjaxResult.error("参数tableId不能为空");
+            throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "参数tableId不能为空");
         }
         return AjaxResult.success(genService.selectGenTableById(tableId));
     }
@@ -100,7 +102,7 @@ public class GenController {
     @PostMapping("/edit")
     public AjaxResult edit(@RequestBody GenTable genTable) {
         if (genTable.getTableId() == null) {
-            return AjaxResult.error("参数tableId不能为空");
+            throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "参数tableId不能为空");
         }
         genService.updateGenTable(genTable);
         return AjaxResult.success();
@@ -114,7 +116,7 @@ public class GenController {
     public AjaxResult sync(@RequestBody Map<String, Long> param) {
         Long tableId = param.get("tableId");
         if (tableId == null) {
-            return AjaxResult.error("参数tableId不能为空");
+            throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "参数tableId不能为空");
         }
         genService.syncDbColumns(tableId);
         return AjaxResult.success("同步成功");
@@ -129,7 +131,7 @@ public class GenController {
         @SuppressWarnings("unchecked")
         List<Number> ids = (List<Number>) param.get("tableIds");
         if (ids == null || ids.isEmpty()) {
-            return AjaxResult.error("请选择要删除的表");
+            throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "请选择要删除的表");
         }
         List<Long> tableIds = ids.stream().map(Number::longValue).collect(Collectors.toList());
         genService.deleteGenTables(tableIds);
@@ -147,7 +149,7 @@ public class GenController {
         @SuppressWarnings("unchecked")
         List<Number> ids = (List<Number>) param.get("tableIds");
         if (ids == null || ids.isEmpty()) {
-            return AjaxResult.error("请选择要预览的表");
+            throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "请选择要预览的表");
         }
         List<Long> tableIds = ids.stream().map(Number::longValue).collect(Collectors.toList());
         return AjaxResult.success(genService.previewCode(tableIds));

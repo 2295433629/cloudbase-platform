@@ -10,7 +10,7 @@ import type {Directive, DirectiveBinding} from 'vue'
  *
  * 改进:
  *   - 优先从 Pinia store 读取权限，fallback 到 localStorage
- *   - 无权限时移除 DOM 元素（而非 display:none），避免控制台可见
+ *   - 无权限时通过 display:none 隐藏（而非移除 DOM），保证 Vue 虚拟 DOM 可正常追踪
  */
 
 let cachedPermissions: string[] = []
@@ -51,19 +51,16 @@ function applyPermission(el: HTMLElement, binding: DirectiveBinding<string | str
   if (!value) return
 
   const permissions = getPermissions()
+  let allowed = false
 
   if (Array.isArray(value)) {
-    const allowed = value.some(perm => hasPermission(perm, permissions))
-    if (!allowed) {
-      el.parentNode?.removeChild(el)
-      return
-    }
+    allowed = value.some(perm => hasPermission(perm, permissions))
   } else {
-    if (!hasPermission(value, permissions)) {
-      el.parentNode?.removeChild(el)
-      return
-    }
+    allowed = hasPermission(value, permissions)
   }
+
+  // 使用 display 控制显隐，避免 removeChild 破坏 Vue 虚拟 DOM 追踪
+  el.style.display = allowed ? '' : 'none'
 }
 
 export default permission

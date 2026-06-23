@@ -64,11 +64,25 @@ const router = createRouter({
 let dynamicRoutesLoaded = false
 /** Promise 锁：防止并发导航重复加载动态路由 */
 let dynamicRoutesPromise: Promise<void> | null = null
+/** 记录已注册的动态路由名称，用于退出时清理 */
+let dynamicRouteNames: string[] = []
 
 /**
- * 重置动态路由标记（登出时调用）
+ * 重置动态路由（登出时调用）
+ * 移除所有已注册的动态路由 + catch-all，重置标记
  */
 export function resetDynamicRoutes(): void {
+  // 移除已注册的动态路由
+  dynamicRouteNames.forEach(name => {
+    if (router.hasRoute(name)) {
+      router.removeRoute(name)
+    }
+  })
+  dynamicRouteNames = []
+  // 移除 catch-all
+  if (router.hasRoute('NotFoundRedirect')) {
+    router.removeRoute('NotFoundRedirect')
+  }
   dynamicRoutesLoaded = false
   dynamicRoutesPromise = null
 }
@@ -95,7 +109,12 @@ async function ensureDynamicRoutes(): Promise<void> {
         console.warn('[router] 动态路由为空，可能接口异常，下次导航将重试')
         return  // 不标记为已加载，下次导航会重试
       }
-      routes.forEach(route => router.addRoute('Layout', route))
+      const addedNames: string[] = []
+      routes.forEach(route => {
+        router.addRoute('Layout', route)
+        if (route.name) addedNames.push(route.name as string)
+      })
+      dynamicRouteNames = addedNames
       console.log(`[router] 动态路由加载完成，共注册 ${routes.length} 条路由`)
       if (import.meta.env.DEV) {
         console.log('[router] 已注册路由:', router.getRoutes().map(r => `${r.name}(${r.path})`).join(', '))

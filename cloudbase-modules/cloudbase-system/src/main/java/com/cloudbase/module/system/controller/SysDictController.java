@@ -3,6 +3,8 @@ package com.cloudbase.module.system.controller;
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
 import com.cloudbase.common.core.domain.TableDataInfo;
+import com.cloudbase.common.core.exception.BusinessException;
+import com.cloudbase.common.core.exception.CommonExceptionEnum;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.module.system.entity.SysDict;
 import com.cloudbase.module.system.model.dto.DictCreateDTO;
@@ -114,7 +116,7 @@ public class SysDictController {
     @PostMapping("/batchImport")
     public AjaxResult batchImport(@RequestBody List<SysDict> list) {
         if (list == null || list.isEmpty()) {
-            return AjaxResult.error("导入数据为空");
+            throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "导入数据为空");
         }
         int successCount = 0;
         for (SysDict dict : list) {

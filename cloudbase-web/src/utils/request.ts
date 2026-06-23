@@ -64,14 +64,28 @@ function redirectToLogin(): void {
 const AUTH_ERROR_CODES = new Set(['A0200', 'A0201', 'A0202'])
 
 /**
- * 清除所有认证相关的 localStorage 数据
+ * 清除所有认证相关的 localStorage 数据 + Pinia store 状态
  * Token 失效时一并清除 permissions/roleCodes，避免下次登录时残留旧数据
+ * 同时清理标签页和动态路由，确保切换账号时会话完全隔离
  */
 function clearAuthStorage(): void {
   localStorage.removeItem('token')
   localStorage.removeItem('userInfo')
   localStorage.removeItem('permissions')
   localStorage.removeItem('roleCodes')
+  // 异步清理 Pinia store 和动态路由（避免循环依赖）
+  Promise.all([
+    import('@/stores/user'),
+    import('@/stores/app'),
+    import('@/router')
+  ]).then(([userMod, appMod, routerMod]) => {
+    const userStore = userMod.useUserStore()
+    const appStore = appMod.useAppStore()
+    userStore.logout()
+    appStore.closeAllTabs()
+    appStore.setBreadcrumbs([])
+    routerMod.resetDynamicRoutes()
+  }).catch(() => {})
 }
 
 // 响应拦截器
@@ -85,7 +99,7 @@ request.interceptors.response.use(
     }
     // 业务错误（HTTP 200 但 code 非 "00000"）
     ElMessage.error(res.msg || '请求失败')
-    // code 为 null/undefined 视为认证状态异常（兆底：后端 controller 未抛标准异常时）
+    // code 为 null/undefined 视为认证状态异常（兜底：后端 controller 未抛标准异常时）
     if (res.code == null || AUTH_ERROR_CODES.has(res.code)) {
       clearAuthStorage()
       redirectToLogin()
@@ -121,7 +135,9 @@ request.interceptors.response.use(
   }
 )
 
-export function setupAxios(): void {}
+export function setupAxios(): void {
+  // 预留扩展：可在此处添加 baseURL 动态配置、额外拦截器等
+}
 
 export function cancelPendingRequests(): void {
   pendingMap.forEach(controller => controller.abort())

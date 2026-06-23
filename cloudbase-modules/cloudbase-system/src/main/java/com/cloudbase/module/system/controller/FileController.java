@@ -2,6 +2,8 @@ package com.cloudbase.module.system.controller;
 
 import com.cloudbase.common.core.annotation.Log;
 import com.cloudbase.common.core.domain.AjaxResult;
+import com.cloudbase.common.core.exception.BusinessException;
+import com.cloudbase.common.core.exception.CommonExceptionEnum;
 import com.cloudbase.common.enums.BusinessType;
 import com.cloudbase.common.web.storage.FileStorageService;
 import com.cloudbase.common.web.storage.LocalFileStorageService;
@@ -43,7 +45,7 @@ public class FileController {
     @PostMapping("/upload")
     public AjaxResult upload(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
-            return AjaxResult.error("上传文件不能为空");
+            throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "上传文件不能为空");
         }
         String url;
         if (fileStorageService instanceof LocalFileStorageService local) {
@@ -54,7 +56,7 @@ public class FileController {
                         file.getOriginalFilename(), file.getContentType());
             } catch (Exception e) {
                 log.error("文件上传失败", e);
-                return AjaxResult.error("文件上传失败: " + e.getMessage());
+                throw new BusinessException(CommonExceptionEnum.SYSTEM_ERROR.getErrorCode(), "文件上传失败: " + e.getMessage());
             }
         }
         Map<String, String> result = new HashMap<>();
@@ -70,10 +72,10 @@ public class FileController {
     @PostMapping("/uploadBatch")
     public AjaxResult uploadBatch(@RequestParam("files") MultipartFile[] files) {
         if (files == null || files.length == 0) {
-            return AjaxResult.error("上传文件不能为空");
+            throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "上传文件不能为空");
         }
         if (files.length > 10) {
-            return AjaxResult.error("单次最多上传10个文件");
+            throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "单次最多上传10个文件");
         }
         List<Map<String, String>> results = new ArrayList<>();
         for (MultipartFile file : files) {
@@ -106,9 +108,12 @@ public class FileController {
     public AjaxResult delete(@RequestBody Map<String, String> params) {
         String fileKey = params.get("fileKey");
         if (fileKey == null || fileKey.isBlank()) {
-            return AjaxResult.error("fileKey 不能为空");
+            throw new BusinessException(CommonExceptionEnum.PARAM_ERROR.getErrorCode(), "fileKey 不能为空");
         }
         boolean result = fileStorageService.delete(fileKey);
-        return result ? AjaxResult.success() : AjaxResult.error("文件不存在或删除失败");
+        if (!result) {
+            throw new BusinessException(CommonExceptionEnum.DATA_NOT_FOUND.getErrorCode(), "文件不存在或删除失败");
+        }
+        return AjaxResult.success();
     }
 }
